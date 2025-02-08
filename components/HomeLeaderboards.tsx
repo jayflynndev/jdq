@@ -200,12 +200,8 @@ export default function Leaderboards() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-4xl text-white font-bold mb-4">Leaderboards</h1>
-      <h1 className="text-3xl text-white font-bold mb-4">
-        See more scores on the leaderboard page
-      </h1>
       <div className="mb-8">
-        <label className="block text-lg font-medium text-white mb-2">
+        <label className="block text-lg font-medium text-black mb-2">
           Select Date for Daily Leaderboard:
         </label>
         <input
