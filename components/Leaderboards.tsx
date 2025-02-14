@@ -1,13 +1,13 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/app/firebase/config";
+import { fetchLeaderboardData } from "@/utils/fetchLeaderboardData";
 import Leaderboard from "./Leaderboard";
 
 type DataItem = {
   username: string;
   score: number;
   tiebreaker: number;
+  quizzesPlayed?: number;
 };
 
 export default function Leaderboards() {
@@ -73,77 +73,25 @@ export default function Leaderboards() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch daily data
-        const dailyQuery = query(
-          collection(db, "scores"),
-          where("quizDate", "==", selectedDate)
-        );
-        const dailySnapshot = await getDocs(dailyQuery);
-        const dailyScores = dailySnapshot.docs.map(
-          (doc) =>
-            doc.data() as {
-              username: string;
-              score: number;
-              tiebreaker: number;
-            }
-        );
-        setDailyData(dailyScores);
-
-        // Fetch weekly data
-        const weeklyQuery = query(
-          collection(db, "scores"),
-          where("quizDate", ">=", startOfWeek.toISOString().split("T")[0]),
-          where("quizDate", "<=", today.toISOString().split("T")[0])
-        );
-        const weeklySnapshot = await getDocs(weeklyQuery);
-        const weeklyScores = weeklySnapshot.docs.map(
-          (doc) =>
-            doc.data() as {
-              username: string;
-              score: number;
-              tiebreaker: number;
-            }
-        );
-        const weeklyAggregated = aggregateScores(weeklyScores, 15);
-        setWeeklyData(weeklyAggregated);
-
-        // Fetch monthly data
-        const monthlyQuery = query(
-          collection(db, "scores"),
-          where("quizDate", ">=", startOfMonth.toISOString().split("T")[0]),
-          where("quizDate", "<=", endOfMonth.toISOString().split("T")[0])
-        );
-        const monthlySnapshot = await getDocs(monthlyQuery);
-        const monthlyScores = monthlySnapshot.docs.map(
-          (doc) =>
-            doc.data() as {
-              username: string;
-              score: number;
-              tiebreaker: number;
-            }
-        );
-        const monthlyAggregated = aggregateScores(monthlyScores);
-        setMonthlyData(monthlyAggregated);
-
-        // Fetch all-time data
-        const allTimeQuery = query(
-          collection(db, "scores"),
-          where("quizDate", ">=", startOfAllTime.toISOString().split("T")[0])
-        );
-        const allTimeSnapshot = await getDocs(allTimeQuery);
-        const allTimeScores = allTimeSnapshot.docs.map(
-          (doc) =>
-            doc.data() as {
-              username: string;
-              score: number;
-              tiebreaker: number;
-            }
-        );
-        const allTimeAggregated = aggregateScores(allTimeScores);
-        setAllTimeData(allTimeAggregated);
+        const { dailyData, weeklyData, monthlyData, allTimeData } =
+          await fetchLeaderboardData(
+            selectedDate,
+            startOfWeek,
+            startOfMonth,
+            endOfMonth,
+            startOfAllTime,
+            today
+          );
+        setDailyData(dailyData);
+        setWeeklyData(weeklyData);
+        setMonthlyData(monthlyData);
+        setAllTimeData(allTimeData);
       } catch (error) {
-        console.error("Error fetching data:", error);
-        setError("Failed to fetch data. Please try again.");
+        if (error instanceof Error) {
+          setError(error.message);
+        } else {
+          setError("An unknown error occurred");
+        }
       }
     };
 
@@ -156,47 +104,6 @@ export default function Leaderboards() {
     startOfWeek,
     today,
   ]);
-
-  const aggregateScores = (
-    scores: { username: string; score: number; tiebreaker: number }[],
-    maxScores = Infinity
-  ) => {
-    const userScores: {
-      [key: string]: {
-        totalScore: number;
-        totalTiebreaker: number;
-        count: number;
-      };
-    } = {};
-
-    scores.forEach((score) => {
-      const { username, score: userScore, tiebreaker } = score;
-      if (!userScores[username]) {
-        userScores[username] = { totalScore: 0, totalTiebreaker: 0, count: 0 };
-      }
-      if (userScores[username].count < maxScores) {
-        userScores[username].totalScore += userScore;
-        userScores[username].totalTiebreaker += tiebreaker;
-        userScores[username].count += 1;
-      }
-    });
-
-    return Object.keys(userScores)
-      .map((username) => {
-        const { totalScore, totalTiebreaker, count } = userScores[username];
-        return {
-          username,
-          score: totalScore / count,
-          tiebreaker: totalTiebreaker / count,
-        };
-      })
-      .sort((a, b) => {
-        if (a.score === b.score) {
-          return a.tiebreaker - b.tiebreaker;
-        }
-        return b.score - a.score;
-      });
-  };
 
   return (
     <div className="container mx-auto p-4">
@@ -218,24 +125,28 @@ export default function Leaderboards() {
           data={dailyData}
           startDate={startOfDay}
           endDate={startOfDay}
+          showQuizzesPlayed={false}
         />
         <Leaderboard
           title={`W/C: ${firstDateOfWeekWithSuffix} ${firstDateOfWeek.month}`}
           data={weeklyData}
           startDate={startOfWeek}
           endDate={today}
+          showQuizzesPlayed={true}
         />
         <Leaderboard
           title={`${monthName} Leaderboard`}
           data={monthlyData}
           startDate={startOfMonth}
           endDate={endOfMonth}
+          showQuizzesPlayed={true}
         />
         <Leaderboard
           title="All-Time Leaderboard"
           data={allTimeData}
           startDate={startOfAllTime}
           endDate={today}
+          showQuizzesPlayed={true}
         />
       </div>
     </div>

@@ -2,7 +2,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/app/firebase/config";
-import Leaderboard from "./Leaderboard";
+
+import HomeLeaderboard from "./HomeLeaderboard";
 
 type DataItem = {
   username: string;
@@ -213,25 +214,25 @@ export default function Leaderboards() {
       </div>
       {error && <p className="text-red-500 mb-4">{error}</p>}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Leaderboard
+        <HomeLeaderboard
           title="Daily Leaderboard"
           data={dailyData}
           startDate={startOfDay}
           endDate={startOfDay}
         />
-        <Leaderboard
+        <HomeLeaderboard
           title={`W/C: ${firstDateOfWeekWithSuffix} ${firstDateOfWeek.month}`}
           data={weeklyData}
           startDate={startOfWeek}
           endDate={today}
         />
-        <Leaderboard
+        <HomeLeaderboard
           title={`${monthName} Leaderboard`}
           data={monthlyData}
           startDate={startOfMonth}
           endDate={endOfMonth}
         />
-        <Leaderboard
+        <HomeLeaderboard
           title="All-Time Leaderboard"
           data={allTimeData}
           startDate={startOfAllTime}

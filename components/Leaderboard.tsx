@@ -1,53 +1,56 @@
-"use client";
-import { useState, useEffect } from "react";
+import React from "react";
 
-interface DataItem {
+type DataItem = {
   username: string;
   score: number;
   tiebreaker: number;
-}
+  quizzesPlayed?: number;
+};
 
 interface LeaderboardProps {
   title: string;
   data: DataItem[];
-  period?: number;
-  startDate?: Date;
-  endDate?: Date;
-  isMonthly?: boolean;
+  startDate: Date;
+  endDate: Date;
+  showQuizzesPlayed: boolean;
 }
 
-const Leaderboard: React.FC<LeaderboardProps> = ({ title, data }) => {
-  const [sortedData, setSortedData] = useState<DataItem[]>([]);
+const Leaderboard: React.FC<LeaderboardProps> = ({
+  title,
+  data = [],
 
-  useEffect(() => {
-    const sorted = [...data].sort((a, b) => {
-      if (a.score === b.score) {
-        return a.tiebreaker - b.tiebreaker;
-      }
-      return b.score - a.score;
-    });
-    setSortedData(sorted);
-  }, [data]);
-
+  showQuizzesPlayed,
+}) => {
+  const displayedData = data.slice(0, 10);
   return (
     <div className="bg-white p-4 rounded shadow-md">
       <h2 className="text-2xl font-bold mb-4">{title}</h2>
-      <table className="min-w-full bg-white">
+      <table className="min-w-full bg-white border-collapse text-center">
         <thead>
           <tr>
-            <th className="py-2">Rank</th>
-            <th className="py-2">Username</th>
-            <th className="py-2">Score</th>
-            <th className="py-2">Tiebreaker</th>
+            <th className="py-2 border border-gray-300">Username</th>
+            <th className="py-2 border border-gray-300">Score</th>
+            <th className="py-2 border border-gray-300">Tiebreaker</th>
+            {showQuizzesPlayed && (
+              <th className="py-2 border border-gray-300">Quizzes Played</th>
+            )}
           </tr>
         </thead>
         <tbody>
-          {sortedData.slice(0, 10).map((item, index) => (
-            <tr key={index} className="text-center">
-              <td className="py-2">{index + 1}</td>
-              <td className="py-2">{item.username}</td>
-              <td className="py-2">{item.score.toFixed(2)}</td>
-              <td className="py-2">{item.tiebreaker.toFixed(2)}</td>
+          {displayedData.map((item, index) => (
+            <tr key={index}>
+              <td className="py-2 border border-gray-300">{item.username}</td>
+              <td className="py-2 border border-gray-300">
+                {item.score.toFixed(2)}
+              </td>
+              <td className="py-2 border border-gray-300">
+                {item.tiebreaker.toFixed(2)}
+              </td>
+              {showQuizzesPlayed && (
+                <td className="py-2 border border-gray-300">
+                  {item.quizzesPlayed}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

@@ -42,7 +42,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ title, data }) => {
           </tr>
         </thead>
         <tbody>
-          {sortedData.slice(0, 10).map((item, index) => (
+          {sortedData.slice(0, 3).map((item, index) => (
             <tr key={index} className="text-center">
               <td className="py-2">{index + 1}</td>
               <td className="py-2">{item.username}</td>

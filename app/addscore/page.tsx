@@ -55,7 +55,7 @@ export default function AddScore() {
         tiebreaker: parseInt(tiebreaker),
       });
 
-      router.push("/leaderboard");
+      router.push("/lb-select/jdqlb");
     } catch (error) {
       console.error("Error adding score:", error);
       setError("Failed to add score. Please try again.");

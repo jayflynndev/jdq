@@ -72,8 +72,8 @@ export default function NavBar() {
             <MenuItems title="Home" href="/" onClick={handleMenuItemClick} />
             <MenuItems title="JDQ" href="/jdq" onClick={handleMenuItemClick} />
             <MenuItems
-              title="Leader Board"
-              href="/leaderboard"
+              title="Leader Boards"
+              href="/lb-select"
               onClick={handleMenuItemClick}
             />
             {user ? (
@@ -110,7 +110,7 @@ export default function NavBar() {
         <div className="hidden lg:flex flex-1 items-center justify-end">
           <MenuItems title="Home" href="/" />
           <MenuItems title="JDQ" href="jdq" />
-          <MenuItems title="Leader Board" href="leaderboard" />
+          <MenuItems title="Leader Boards" href="/lb-select" />
           {user ? (
             <>
               <MenuItems title="Add Score" href="/addscore" />
