@@ -44,8 +44,13 @@ export default function Profile() {
           setUsername(username);
 
           const scoresData = await fetchScores(user.uid);
-          setScores(scoresData || []);
-          const averages = calculateAverages(scoresData || []);
+          // Sort scores by date in descending order
+          const sortedScores = scoresData.sort(
+            (a, b) =>
+              new Date(b.quizDate).getTime() - new Date(a.quizDate).getTime()
+          );
+          setScores(sortedScores || []);
+          const averages = calculateAverages(sortedScores || []);
           setWeeklyAverage(averages.weeklyAverage);
           setMonthlyAverage(averages.monthlyAverage);
           setAllTimeAverage(averages.allTimeAverage);
