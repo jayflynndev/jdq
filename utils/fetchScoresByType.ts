@@ -9,10 +9,12 @@ import {
 
 // Define the Score type or import it from the appropriate module
 type Score = {
-  // Replace these fields with the actual structure of your Score documents
-  id?: string;
+  uid: string;
+  username: string;
+  quizDate: string;
+  score: number;
+  tiebreaker: number;
   quizType: string;
-  // Add other fields as needed
 };
 
 export async function fetchScoresByType(quizType: string): Promise<Score[]> {

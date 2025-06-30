@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { fetchScoresByType } from "@/utils/fetchScoresByType";
 
 // Define the Score type if not imported from elsewhere
-type Score = {
+type RawScore = {
   username: string;
   score: number;
   tiebreaker: number;
@@ -36,7 +36,7 @@ export default function AllTimeLeaderboard({
     const fetchAndAggregate = async () => {
       const allScores = await fetchScoresByType(quizType);
 
-      const userMap: { [username: string]: Score[] } = {};
+      const userMap: { [username: string]: RawScore[] } = {};
       allScores.forEach((score) => {
         if (!userMap[score.username]) userMap[score.username] = [];
         userMap[score.username].push(score);
