@@ -10,7 +10,7 @@ declare global {
 }
 
 export default function AdBanner() {
-  const adRef = useRef<HTMLDivElement>(null);
+  const adRef = useRef<HTMLModElement>(null);
 
   useEffect(() => {
     // Only push adsbygoogle if the current ad hasn't already loaded
