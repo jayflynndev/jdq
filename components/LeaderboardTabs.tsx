@@ -30,10 +30,14 @@ export default function LeaderboardTabs({ quizType }: LeaderboardTabsProps) {
 
       {/* Tabs */}
       <div className="flex justify-center flex-wrap gap-4 mb-8">
-        {["daily", "weekly", "monthly", "allTime"].map((view) => (
+        {(
+          ["daily", "weekly", "monthly", "allTime"] as Array<
+            "daily" | "weekly" | "monthly" | "allTime"
+          >
+        ).map((view) => (
           <button
             key={view}
-            onClick={() => setSelectedView(view as any)}
+            onClick={() => setSelectedView(view)}
             className={`px-4 py-2 rounded font-bold transition ${
               selectedView === view
                 ? "bg-white text-black shadow"

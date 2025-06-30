@@ -2,7 +2,15 @@
 import { useEffect, useState } from "react";
 import { fetchScoresByType } from "@/utils/fetchScoresByType";
 import { getStartOfWeek } from "@/utils/dateUtils";
-import { Score } from "@/types/Score";
+
+interface Score {
+  username: string;
+  score?: number;
+  tiebreaker?: number;
+  quizDate?: string;
+  averageScore?: number;
+  averageTiebreaker?: number;
+}
 
 export default function WeeklyLeaderboard({
   quizType,
@@ -34,8 +42,8 @@ export default function WeeklyLeaderboard({
       });
 
       const aggregated = Object.entries(userMap).map(([username, scores]) => {
-        const total = scores.reduce((sum, s) => sum + s.score, 0);
-        const tbTotal = scores.reduce((sum, s) => sum + s.tiebreaker, 0);
+        const total = scores.reduce((sum, s) => sum + (s.score ?? 0), 0);
+        const tbTotal = scores.reduce((sum, s) => sum + (s.tiebreaker ?? 0), 0);
         return {
           username,
           averageScore: Math.round((total / scores.length) * 100) / 100,
@@ -94,7 +102,7 @@ export default function WeeklyLeaderboard({
         <div className="bg-green-100 text-black p-4 rounded shadow mb-2">
           {userIndex !== null && userIndex < 10 ? (
             <p className="font-bold mb-1">
-              🎉 Congrats! You're in the top 10 this week:
+              🎉 Congrats! You&#39;re in the top 10 this week:
             </p>
           ) : (
             <p className="font-bold mb-1">

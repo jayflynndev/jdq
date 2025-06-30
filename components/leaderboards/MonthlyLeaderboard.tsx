@@ -1,7 +1,16 @@
 "use client";
 import { useEffect, useState } from "react";
 import { fetchScoresByType } from "@/utils/fetchScoresByType";
-import { Score } from "@/types/Score";
+
+interface Score {
+  username: string;
+  score: number;
+  tiebreaker: number;
+  quizDate: string;
+  // For aggregated scores, these fields are used:
+  averageScore?: number;
+  averageTiebreaker?: number;
+}
 
 export default function MonthlyLeaderboard({
   quizType,
@@ -37,12 +46,15 @@ export default function MonthlyLeaderboard({
       });
 
       const aggregated = Object.entries(userMap)
-        .filter(([_, scores]) => scores.length >= 5)
+        .filter(([, scores]) => scores.length >= 5)
         .map(([username, scores]) => {
           const total = scores.reduce((sum, s) => sum + s.score, 0);
           const tbTotal = scores.reduce((sum, s) => sum + s.tiebreaker, 0);
           return {
             username,
+            score: 0,
+            tiebreaker: 0,
+            quizDate: "",
             averageScore: Math.round((total / scores.length) * 100) / 100,
             averageTiebreaker:
               Math.round((tbTotal / scores.length) * 100) / 100,
@@ -100,7 +112,7 @@ export default function MonthlyLeaderboard({
         <div className="bg-green-100 text-black p-4 rounded shadow mb-2">
           {userIndex !== null && userIndex < 10 ? (
             <p className="font-bold mb-1">
-              🎉 Congrats! You're in the top 10 this month:
+              🎉 Congrats! You&#39;re in the top 10 this month:
             </p>
           ) : (
             <p className="font-bold mb-1">

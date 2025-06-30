@@ -1,19 +1,36 @@
 "use client";
 import { useEffect, useState } from "react";
 import { fetchScoresByType } from "@/utils/fetchScoresByType";
-import { Score } from "@/types/Score";
+
+// Define the Score type if not imported from elsewhere
+type Score = {
+  username: string;
+  score: number;
+  tiebreaker: number;
+};
+
+// Aggregated score type for leaderboard
+type AggregatedScore = {
+  username: string;
+  averageScore: number;
+  averageTiebreaker: number;
+};
+
+type AllTimeLeaderboardProps = {
+  quizType: string;
+  searchedUsername?: string;
+};
 
 export default function AllTimeLeaderboard({
   quizType,
   searchedUsername,
-}: {
-  quizType: string;
-  searchedUsername?: string;
-}) {
-  const [aggregatedScores, setAggregatedScores] = useState<Score[]>([]);
+}: AllTimeLeaderboardProps) {
+  const [aggregatedScores, setAggregatedScores] = useState<AggregatedScore[]>(
+    []
+  );
   const [showFull, setShowFull] = useState(false);
   const [userIndex, setUserIndex] = useState<number | null>(null);
-  const [userScore, setUserScore] = useState<Score | null>(null);
+  const [userScore, setUserScore] = useState<AggregatedScore | null>(null);
 
   useEffect(() => {
     const fetchAndAggregate = async () => {
@@ -26,7 +43,7 @@ export default function AllTimeLeaderboard({
       });
 
       const aggregated = Object.entries(userMap)
-        .filter(([_, scores]) => scores.length >= 20)
+        .filter(([, scores]) => scores.length >= 20)
         .map(([username, scores]) => {
           const total = scores.reduce((sum, s) => sum + s.score, 0);
           const tbTotal = scores.reduce((sum, s) => sum + s.tiebreaker, 0);
@@ -80,11 +97,12 @@ export default function AllTimeLeaderboard({
         <div className="bg-green-100 text-black p-4 rounded shadow mb-2">
           {userIndex !== null && userIndex < 10 ? (
             <p className="font-bold mb-1">
-              🎉 Congrats! You're in the top 10 all-time:
+              🎉 Congrats! You&#39;re in the top 10 all-time:
             </p>
           ) : (
             <p className="font-bold mb-1">
-              You’re not in the top 10, but here’s your all-time ranking:
+              You&#39;re not in the top 10, but here&#39;s your all-time
+              ranking:
             </p>
           )}
           <p>

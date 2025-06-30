@@ -1,7 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { fetchScoresByType } from "@/utils/fetchScoresByType";
-import { Score } from "@/types/Score";
+
+interface Score {
+  username: string;
+  score: number;
+  tiebreaker: number;
+  quizDate: string;
+}
 
 export default function DailyLeaderboard({
   quizType,
@@ -68,7 +74,7 @@ export default function DailyLeaderboard({
         <div className="bg-green-100 text-black p-4 rounded shadow mb-2">
           {userIndex !== null && userIndex < 10 ? (
             <p className="font-bold mb-1">
-              🎉 Congrats! You're in the top 10 today:
+              🎉 Congrats! You&#39;re in the top 10 today:
             </p>
           ) : (
             <p className="font-bold mb-1">
