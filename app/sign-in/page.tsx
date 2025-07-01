@@ -8,10 +8,14 @@ export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError("");
+    setSuccess("");
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
@@ -33,6 +37,8 @@ export default function SignIn() {
         className="w-full max-w-md p-8 bg-white rounded shadow-md"
       >
         {error && <p className="text-red-500 mb-4">{error}</p>}
+        {success && <p className="text-green-600 mb-4">{success}</p>}
+
         <div className="mb-4">
           <label
             className="block text-gray-700 text-sm font-bold mb-2"
@@ -49,7 +55,8 @@ export default function SignIn() {
             required
           />
         </div>
-        <div className="mb-4">
+
+        <div className="mb-2">
           <label
             className="block text-gray-700 text-sm font-bold mb-2"
             htmlFor="password"
@@ -65,12 +72,25 @@ export default function SignIn() {
             required
           />
         </div>
+
+        <div className="mb-4 text-right">
+          <p className="mt-2 text-right">
+            <a
+              href="/forgot-password"
+              className="text-sm text-blue-500 hover:underline"
+            >
+              Forgot your password?
+            </a>
+          </p>
+        </div>
+
         <button
           type="submit"
           className="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-700"
         >
           Sign In
         </button>
+
         <p className="mt-4 text-gray-700">
           Not registered?{" "}
           <a href="/sign-up" className="text-blue-500 hover:underline">
