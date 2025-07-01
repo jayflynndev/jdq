@@ -1,30 +1,31 @@
 "use client";
 
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { confirmPasswordReset } from "firebase/auth";
 import { auth } from "@/app/firebase/config";
 
 export default function ResetPasswordPage() {
-  const searchParams = useSearchParams();
-  const oobCode = searchParams.get("oobCode");
+  const [oobCode, setOobCode] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  const handleReset = async () => {
-    if (!oobCode) return setError("Missing or invalid reset code.");
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      setOobCode(params.get("oobCode"));
+    }
+  }, []);
 
-    if (newPassword.length < 6) {
-      return setError("Password must be at least 6 characters long.");
+  const handleReset = async () => {
+    if (!oobCode) {
+      setError("Missing or invalid reset code.");
+      return;
     }
 
     try {
       await confirmPasswordReset(auth, oobCode, newPassword);
       setSuccess(true);
-      setTimeout(() => {
-        window.location.href = "/sign-in";
-      }, 3000);
     } catch (err) {
       console.error(err);
       setError("Password reset failed. The link may be expired or invalid.");
@@ -36,14 +37,10 @@ export default function ResetPasswordPage() {
       <h1 className="text-2xl font-bold mb-4">Reset Your Password</h1>
       {success ? (
         <p className="text-green-600">
-          ✅ Your password has been reset successfully. Redirecting to
-          sign-in...
+          ✅ Your password has been reset successfully.
         </p>
       ) : (
         <>
-          <label className="block mb-2 font-semibold text-gray-700">
-            New Password
-          </label>
           <input
             type="password"
             className="border p-2 w-full mb-4"
@@ -53,12 +50,7 @@ export default function ResetPasswordPage() {
           />
           <button
             onClick={handleReset}
-            disabled={!newPassword}
-            className={`w-full text-white py-2 rounded ${
-              newPassword
-                ? "bg-blue-600 hover:bg-blue-700"
-                : "bg-gray-400 cursor-not-allowed"
-            }`}
+            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
           >
             Reset Password
           </button>
@@ -68,5 +60,3 @@ export default function ResetPasswordPage() {
     </div>
   );
 }
-
-export const dynamic = "force-dynamic";
