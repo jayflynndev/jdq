@@ -16,6 +16,14 @@ export default function ResetPasswordPage() {
       setOobCode(params.get("oobCode"));
     }
   }, []);
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        window.location.href = "/sign-in";
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
 
   const handleReset = async () => {
     if (!oobCode) {
@@ -36,9 +44,12 @@ export default function ResetPasswordPage() {
     <div className="max-w-md mx-auto mt-10 bg-white p-6 rounded shadow">
       <h1 className="text-2xl font-bold mb-4">Reset Your Password</h1>
       {success ? (
-        <p className="text-green-600">
-          ✅ Your password has been reset successfully.
-        </p>
+        <>
+          <p className="text-green-600 mb-4">
+            ✅ Your password has been reset successfully.
+          </p>
+          <p className="text-gray-700">Redirecting to sign-in page...</p>
+        </>
       ) : (
         <>
           <input
