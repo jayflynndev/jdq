@@ -40,10 +40,10 @@ export default function NavBar() {
 
   return (
     <header className="w-full">
-      <nav className="sticky flex top-0 p-2 bg-gradient-to-t from-purple-800 to-purple-400 z-50">
+      <nav className="sticky flex top-0 p-2 bg-gradient-to-t from-primary-900 to-primary-200 z-50">
         <div className="flex items-center p-2 gap-2">
           <GiPodiumWinner className="text-yellow-400 text-5xl" />
-          <div className="font-bold text-2xl text-purple-100">
+          <div className="font-bold text-2xl text-primary-100">
             Jay&apos;s Quiz Hub
           </div>
         </div>
@@ -53,12 +53,12 @@ export default function NavBar() {
             className="block lg:hidden ml-auto pr-4 my-auto cursor-pointer"
             onClick={toggleMenu}
           >
-            <GiHamburgerMenu className="text-5xl text-white" />
+            <GiHamburgerMenu className="text-5xl text-primary" />
           </div>
         )}
         {/* Mobile Menu */}
         <div
-          className={`lg:hidden fixed top-0 left-0 w-full h-full bg-purple-800 bg-opacity-90 z-60 transition-transform transform ${
+          className={`lg:hidden fixed top-0 left-0 w-full h-full bg-gradient-to-t from-primary-200 to-primary-900 bg-opacity-90 z-60 transition-transform transform ${
             isOpen ? "translate-y-0" : "-translate-y-full"
           }`}
         >

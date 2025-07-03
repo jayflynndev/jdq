@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import DailyLeaderboard from "./leaderboards/DailyLeaderboard";
 import WeeklyLeaderboard from "./leaderboards/WeeklyLeaderboard";
 import MonthlyLeaderboard from "./leaderboards/MonthlyLeaderboard";
@@ -50,6 +51,11 @@ export default function LeaderboardTabs({ quizType }: LeaderboardTabsProps) {
             {view === "allTime" && "All Time"}
           </button>
         ))}
+        <Link href="/lb-select">
+          <button className="px-4 py-2 rounded font-bold transition bg-blue-600 text-white hover:bg-blue-500">
+            Leader Boards
+          </button>
+        </Link>
       </div>
 
       {/* Content */}

@@ -6,6 +6,8 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/app/firebase/config";
 import Image from "next/image";
 
+import Section from "@/components/Section";
+
 type QuizRound = {
   round: number;
   questions: string[];
@@ -36,6 +38,45 @@ type Quiz = {
   };
 };
 
+// Updated VideoEmbed using padding-bottom hack for 16:9
+function VideoEmbed({ src, sticky }: { src: string; sticky: boolean }) {
+  return (
+    <div
+      className={`
+        ${
+          sticky
+            ? "fixed bottom-4 right-4 w-64 h-36 shadow-xl"
+            : "relative w-full mb-6"
+        }
+        rounded-lg overflow-hidden transition-all duration-300
+      `}
+    >
+      {/* Use padding-bottom on a wrapper for 16:9 */}
+      {!sticky && (
+        <div className="w-full relative" style={{ paddingBottom: "56.25%" }}>
+          <iframe
+            className="absolute inset-0 w-full h-full"
+            src={src}
+            title="Quiz Video"
+            allow="autoplay; encrypted-media"
+            allowFullScreen
+          />
+        </div>
+      )}
+
+      {sticky && (
+        <iframe
+          className="absolute inset-0 w-full h-full"
+          src={src}
+          title="Quiz Video"
+          allow="autoplay; encrypted-media"
+          allowFullScreen
+        />
+      )}
+    </div>
+  );
+}
+
 export default function QuizRecapDetailPage() {
   const { id } = useParams();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -59,15 +100,15 @@ export default function QuizRecapDetailPage() {
       } finally {
         setLoading(false);
       }
-      const handleScroll = () => {
-        setIsSticky(window.scrollY > 300);
-      };
-
-      window.addEventListener("scroll", handleScroll);
-      return () => window.removeEventListener("scroll", handleScroll);
     };
 
     fetchQuiz();
+
+    const handleScroll = () => {
+      setIsSticky(window.scrollY > 300);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [id]);
 
   const extractVideoId = (url: string) => {
@@ -86,7 +127,6 @@ export default function QuizRecapDetailPage() {
 
   const handleCodeSubmit = () => {
     if (!quiz?.accessCodes || !selectedPart) return;
-
     const validCode = quiz.accessCodes[selectedPart];
     if (codeInput.trim() === validCode) {
       setCodeValid(true);
@@ -110,28 +150,17 @@ export default function QuizRecapDetailPage() {
   };
 
   return (
-    <div className="px-4 py-8 max-w-4xl mx-auto">
+    <Section
+      container
+      pyClass="py-8"
+      bgClass="bg-gradient-to-t from-primary-200 to-primary-900"
+    >
       <h1 className="text-3xl font-bold text-yellow-400 mb-4">
         {quiz.quizDay} – {formatDate(quiz.quizDate)}
       </h1>
 
-      {embedUrl && (
-        <div
-          className={`z-40 transition-all duration-300 ${
-            isSticky
-              ? "fixed bottom-4 right-4 w-64 h-36 shadow-xl"
-              : "relative aspect-video w-full mb-6"
-          } rounded-lg overflow-hidden`}
-        >
-          <iframe
-            className="w-full h-full"
-            src={embedUrl}
-            title="Quiz Video"
-            allow="autoplay; encrypted-media"
-            allowFullScreen
-          />
-        </div>
-      )}
+      {/* Video Embed */}
+      {embedUrl && <VideoEmbed src={embedUrl} sticky={isSticky} />}
 
       {/* Part selection & logic */}
       {!selectedPart && (
@@ -151,9 +180,10 @@ export default function QuizRecapDetailPage() {
         </div>
       )}
 
+      {/* Code entry */}
       {selectedPart && !codeValid && (
         <div className="mt-6 space-y-4">
-          <p className="text-white">
+          <p className="text-black text-lg">
             Enter access code for{" "}
             {selectedPart === "part1" ? "Part One" : "Part Two"}:
           </p>
@@ -163,26 +193,29 @@ export default function QuizRecapDetailPage() {
             value={codeInput}
             onChange={(e) => setCodeInput(e.target.value)}
           />
-          <button
-            onClick={handleCodeSubmit}
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-500"
-          >
-            Submit Code
-          </button>
-          <button
-            onClick={resetView}
-            className="text-yellow-300 bg-purple-800 px-4 py-2 rounded font-bold ml-2  mt-2"
-          >
-            Return to Part Menu
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleCodeSubmit}
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-500"
+            >
+              Submit Code
+            </button>
+            <button
+              onClick={resetView}
+              className="text-yellow-300 bg-primary-900 px-4 py-2 rounded font-bold"
+            >
+              Return to Part Menu
+            </button>
+          </div>
         </div>
       )}
 
+      {/* Rounds & Images */}
       {selectedPart && codeValid && (
         <div className="mt-8 space-y-6">
           <button
             onClick={resetView}
-            className="text-yellow-300 bg-purple-800 px-4 py-2 rounded font-bold ml-2  mt-2"
+            className="text-yellow-300 bg-primary-900 px-4 py-2 rounded font-bold"
           >
             Return to Part Menu
           </button>
@@ -191,64 +224,52 @@ export default function QuizRecapDetailPage() {
           <h2 className="text-2xl font-bold text-yellow-400">
             {selectedPart === "part1" ? "Rounds 1–3" : "Rounds 4–5"}
           </h2>
-
-          {quiz.parts?.[selectedPart]?.rounds.map(
-            (round: { round: number; questions: string[] }, index: number) => (
-              <div
-                key={index}
-                className="bg-purple-700 p-4 rounded-lg text-white shadow-md"
-              >
-                <h3 className="text-xl font-bold mb-2">Round {round.round}</h3>
-                <ul className="list-disc list-inside space-y-1 pl-2">
-                  {round.questions.map((q: string, i: number) => (
-                    <li key={i}>{q}</li>
-                  ))}
-                </ul>
-              </div>
-            )
-          )}
-
+          {quiz.parts?.[selectedPart]?.rounds.map((round, idx) => (
+            <div
+              key={idx}
+              className="bg-purple-700 p-4 rounded-lg text-white shadow-md"
+            >
+              <h3 className="text-xl font-bold mb-2">Round {round.round}</h3>
+              <ul className="list-disc list-inside pl-2 space-y-1">
+                {round.questions.map((q, i) => (
+                  <li key={i}>{q}</li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          <button
+            onClick={resetView}
+            className="text-yellow-300 bg-primary-900 px-4 py-2 rounded font-bold"
+          >
+            Return to Part Menu
+          </button>
           {/* Images */}
           {(quiz.parts?.[selectedPart]?.images?.length ?? 0) > 0 && (
             <>
-              <button
-                onClick={resetView}
-                className="text-yellow-300 bg-purple-800 px-4 py-2 rounded font-bold ml-2  mt-2"
-              >
-                Return to Part Menu
-              </button>
-              <h3 className="text-xl font-semibold text-yellow-300 mt-6">
+              <h3 className="text-xl font-semibold text-yellow-300">
                 Related Images
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {quiz.parts?.[selectedPart]?.images?.map(
-                  (img: { label: string; url: string }, i: number) => (
-                    <div
-                      key={i}
-                      className="bg-purple-800 rounded-lg p-3 text-white"
-                    >
-                      <p className="text-sm mb-2">{img.label}</p>
-                      <Image
-                        src={img.url}
-                        alt={img.label}
-                        width={600} // or a safe default width
-                        height={400} // or adjust as needed
-                        className="rounded w-full h-auto object-contain"
-                      />
-                    </div>
-                  )
-                )}
+                {quiz.parts?.[selectedPart]?.images?.map((img, i) => (
+                  <div
+                    key={i}
+                    className="bg-purple-800 rounded-lg p-3 text-white"
+                  >
+                    <p className="text-sm mb-2">{img.label}</p>
+                    <Image
+                      src={img.url}
+                      alt={img.label}
+                      width={600}
+                      height={400}
+                      className="rounded w-full h-auto object-contain"
+                    />
+                  </div>
+                ))}
               </div>
-              <button
-                onClick={resetView}
-                className="text-yellow-300 bg-purple-800 px-4 py-2 rounded font-bold ml-2  mt-2"
-              >
-                Return to Part Menu
-              </button>
             </>
           )}
         </div>
       )}
-    </div>
+    </Section>
   );
 }

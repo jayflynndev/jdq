@@ -1,12 +1,14 @@
 // app/lb-select/jvpqlb/page.tsx (or wherever your select page lives)
 import HomeHero from "@/components/Hero";
 import LBCard from "@/components/LBCard";
+import Section from "@/components/Section";
 
 export default function LeaderboardSelectPage() {
   return (
-    <div
-      className="bg-gradient-to-t from-purple-900 to-purple-200
-     text-white"
+    <Section
+      bgClass="relative bg-gradient-to-t from-primary-200 to-primary-900"
+      pxClass="px-0"
+      pyClass="py-0"
     >
       <HomeHero
         heroTitle="JDQ and JVQ Leaderboards!"
@@ -33,6 +35,6 @@ export default function LeaderboardSelectPage() {
           href="/lb-select/jvpqlb"
         />
       </div>
-    </div>
+    </Section>
   );
 }

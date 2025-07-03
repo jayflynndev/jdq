@@ -6,6 +6,7 @@ import LastSaturdayLeaderboard from "./leaderboards/LastSaturdayLeaderboard";
 import ThursdayLeaderboard from "./leaderboards/ThursdayLeaderboard";
 import SaturdayLeaderboard from "./leaderboards/SaturdayLeaderboard";
 import CombinedJVQLeaderboard from "./leaderboards/CombinedJVQLeaderboard";
+import Link from "next/link";
 
 export default function JVQLeaderboardTabs() {
   const [selectedView, setSelectedView] = useState<
@@ -58,6 +59,11 @@ export default function JVQLeaderboardTabs() {
             }
           </button>
         ))}
+        <Link href="/lb-select">
+          <button className="px-4 py-2 rounded font-bold transition bg-blue-600 text-white hover:bg-blue-500">
+            Leader Boards Menu
+          </button>
+        </Link>
       </div>
 
       {/* Content */}

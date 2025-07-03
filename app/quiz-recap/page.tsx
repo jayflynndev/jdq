@@ -5,11 +5,14 @@ import { db } from "@/app/firebase/config";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import Link from "next/link";
 import HomeHero from "@/components/Hero";
+import Section from "@/components/Section";
+import Image from "next/image";
 
 interface Quiz {
   id: string;
   quizDay: string;
   quizDate: string;
+  thumbnailUrl?: string;
 }
 
 export default function QuizRecapPage() {
@@ -28,6 +31,7 @@ export default function QuizRecapPage() {
           id: doc.id,
           ...doc.data(),
         })) as Quiz[];
+
         setQuizzes(fetched);
       } catch (err) {
         console.error("Failed to fetch quizzes:", err);
@@ -48,45 +52,70 @@ export default function QuizRecapPage() {
   };
 
   return (
-    <main>
-      <HomeHero
-        heroTitle="JVQ Recaps"
-        heroSubtitle="Whether Thursday or Saturday, you can find those questions and Pictures here!"
-        heroDescription="If playing live or premiere on the night in question, it will be the current quiz you need to select. If you are playing on catch-up, check the dates in the Previous Quizes section."
-        heroImage="/images/HeroPH.jpg"
-        heightClass="min-h-[600px]"
-        overlay={true}
-      />
+    <>
+      <Section
+        bgClass="relative bg-gradient-to-t from-primary-900 to-primary-200"
+        pxClass="px-0"
+        pyClass="py-0"
+      >
+        <HomeHero
+          heroTitle="JVQ Recaps"
+          heroSubtitle="Whether Thursday or Saturday, you can find those questions and Pictures here!"
+          heroDescription="If playing live or premiere on the night in question, it will be the current quiz you need to select. If you are playing on catch-up, check the dates in the Previous Quizes"
+          heroImage="/images/HeroPH.jpg"
+          heightClass="min-h-[600px]"
+          overlay={true}
+        />
+      </Section>
 
-      <div className="px-4 py-6 max-w-5xl mx-auto">
+      <Section
+        container
+        bgClass="relative bg-gradient-to-t from-primary-200 to-primary-900"
+      >
         {loading ? (
-          <p className="text-white">Loading quizzes...</p>
+          <p className="text-primary-700">Loading quizzes…</p>
         ) : (
           <>
+            {/* Current Quiz */}
             {currentQuiz && (
               <>
-                <h1 className="text-3xl font-bold text-yellow-400 mb-4">
+                <h1 className="text-h2 text-primary-200 text-xl font-bold mb-4">
                   Current Quiz 📌
                 </h1>
-                <Link href={`/quiz-recap/${currentQuiz.id}`}>
-                  <div className="bg-purple-800 text-yellow-300 p-6 rounded-xl shadow-lg hover:bg-purple-700 cursor-pointer">
-                    <div className="text-2xl font-extrabold tracking-wide uppercase">
-                      {currentQuiz.quizDay} – {formatDate(currentQuiz.quizDate)}
+                <Link
+                  href={`/quiz-recap/${currentQuiz.id}`}
+                  key={currentQuiz.id}
+                  className="block"
+                >
+                  <div className="relative rounded-lg overflow-hidden shadow-md hover:shadow-lg transition">
+                    {/* 16:9 container */}
+                    <div className="aspect-w-16 aspect-h-9">
+                      <Image
+                        src={currentQuiz.thumbnailUrl!}
+                        alt={`${currentQuiz.quizDay} thumbnail`}
+                        fill
+                        style={{ objectFit: "cover" }}
+                        objectFit="cover"
+                        className="brightness-75"
+                        priority={false}
+                      />
                     </div>
+                    {/* overlay text */}
                   </div>
                 </Link>
               </>
             )}
 
+            {/* Previous Quizzes */}
             {previousQuizzes.length > 0 && (
               <>
-                <h2 className="text-2xl font-semibold text-yellow-400 mt-10 mb-4">
+                <h2 className="text-h2 text-primary-700 text-xl font-bold mt-4 mb-4">
                   Previous Quizzes
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {previousQuizzes.map((quiz) => (
                     <Link href={`/quiz-recap/${quiz.id}`} key={quiz.id}>
-                      <div className="bg-purple-700 text-white p-4 rounded-lg shadow-md hover:bg-purple-600 transition cursor-pointer">
+                      <div className="bg-primary-600 text-white p-4 rounded-lg shadow-md hover:bg-primary-500 transition">
                         {quiz.quizDay} – {formatDate(quiz.quizDate)}
                       </div>
                     </Link>
@@ -96,7 +125,7 @@ export default function QuizRecapPage() {
             )}
           </>
         )}
-      </div>
-    </main>
+      </Section>
+    </>
   );
 }
