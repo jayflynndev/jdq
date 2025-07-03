@@ -1,3 +1,4 @@
+// app/profile/page.tsx (or wherever your Profile lives)
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -7,6 +8,7 @@ import { fetchUsername } from "@/utils/fetchUsername";
 import ProfileForm from "@/components/profileForm";
 import AddScoreForm from "@/components/AddScoreForm";
 import JdqScoreSummary from "@/components/JdqScoreSummary";
+import JvqScoreSummary from "@/components/JvqScoreSummary";
 
 export default function Profile() {
   const [email, setEmail] = useState("");
@@ -17,6 +19,7 @@ export default function Profile() {
 
   const [showAddScoreForm, setShowAddScoreForm] = useState(false);
   const [showJdqScores, setShowJdqScores] = useState(false);
+  const [showJvqScores, setShowJvqScores] = useState(false);
 
   const router = useRouter();
 
@@ -34,7 +37,6 @@ export default function Profile() {
         router.push("/sign-in");
       }
     });
-
     return () => unsubscribe();
   }, [router]);
 
@@ -51,6 +53,8 @@ export default function Profile() {
             <AddScoreForm onScoreSubmitted={() => setShowAddScoreForm(false)} />
           ) : showJdqScores ? (
             <JdqScoreSummary onBack={() => setShowJdqScores(false)} />
+          ) : showJvqScores ? (
+            <JvqScoreSummary onBack={() => setShowJvqScores(false)} />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div
@@ -68,13 +72,16 @@ export default function Profile() {
               >
                 <h3 className="text-xl font-bold mb-2">See Your JDQ Scores</h3>
                 <p className="text-gray-600">
-                  View your scores and leaderboard placement.
+                  View your JDQ averages and leaderboard placements.
                 </p>
               </div>
-              <div className="bg-white p-6 rounded shadow-md text-center">
+              <div
+                onClick={() => setShowJvqScores(true)}
+                className="bg-white p-6 rounded shadow-md hover:shadow-lg transition cursor-pointer text-center"
+              >
                 <h3 className="text-xl font-bold mb-2">See Your JVQ Scores</h3>
                 <p className="text-gray-600">
-                  Coming soon: Jay’s Video Quiz Leaderboard.
+                  View your JVQ averages and leaderboard placements.
                 </p>
               </div>
             </div>

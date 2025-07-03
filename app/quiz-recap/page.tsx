@@ -53,7 +53,7 @@ export default function QuizRecapPage() {
         heroTitle="Quiz Recap"
         heroSubtitle="Catch up on the action"
         heroDescription="Missed a quiz or want to relive it? Explore the latest recaps below."
-        heightClass="h-[300px] min-h-[200px]"
+        heightClass="h-auto md:h-[600px]"
       />
 
       <div className="px-4 py-6 max-w-5xl mx-auto">

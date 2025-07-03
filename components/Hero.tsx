@@ -1,40 +1,58 @@
-interface HeroItemsProps {
+// components/Hero.tsx
+"use client";
+
+import React from "react";
+
+interface HeroProps {
   heroTitle: string;
-  heroSubtitle?: string;
-  heroDescription?: string;
-  heroImage?: string; // optional now
-  heightClass?: string; // optional
+  heroSubtitle: string;
+  heroDescription: string;
+  heroImage?: string;
+  heightClass?: string; // e.g. "h-[600px] min-h-[300px]"
 }
 
-export default function HomeHero({
+export default function Hero({
   heroTitle,
   heroSubtitle,
   heroDescription,
   heroImage,
-  heightClass,
-}: HeroItemsProps) {
-  const containerClasses = [
-    "relative flex flex-col items-center justify-center",
-    heightClass ?? "h-[calc(100vh-200px)] min-h-[400px]",
-    heroImage ? "bg-cover bg-center bg-fixed md:bg-scroll" : "bg-transparent",
-  ].join(" ");
-
+  heightClass = "",
+}: HeroProps) {
   return (
     <div
-      style={heroImage ? { backgroundImage: `url('${heroImage}')` } : {}}
-      className={containerClasses}
+      className={`relative overflow-hidden flex items-center justify-center ${heightClass}`}
     >
-      <div className="bg-white/30 py-2 px-4 backdrop-blur-md rounded-md max-w-4xl text-center">
-        <div className="text-black">
-          <div className="text-4xl font-bold md:text-6xl">{heroTitle}</div>
-          {heroSubtitle && (
-            <div className="text-3xl font-bold md:text-5xl">{heroSubtitle}</div>
-          )}
-          {heroDescription && (
-            <div className="text-2xl md:text-4xl">{heroDescription}</div>
-          )}
-        </div>
+      {/* Text block with responsive padding + blur/bg */}
+      <div
+        className="
+          relative z-10
+          mx-auto max-w-3xl
+          px-4 py-8
+          sm:py-12 md:py-20
+          text-center
+          rounded-lg
+          bg-purple-500 bg-opacity-20
+          backdrop-blur-sm
+          sm:bg-opacity-30
+        "
+      >
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-black mb-2">
+          {heroTitle}
+        </h1>
+        <h2 className="text-lg sm:text-xl md:text-2xl text-black mb-4">
+          {heroSubtitle}
+        </h2>
+        <p className="text-sm sm:text-base md:text-lg text-black leading-relaxed">
+          {heroDescription}
+        </p>
       </div>
+
+      {/* Background image + overlay – only on md+ */}
+      <div
+        className="absolute inset-0 bg-cover bg-center hidden md:block"
+        style={{ backgroundImage: `url(${heroImage})` }}
+      />
+      <div className="absolute inset-0 bg-purple-500 opacity-100 hidden md:block" />
     </div>
   );
 }

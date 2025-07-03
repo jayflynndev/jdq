@@ -29,7 +29,11 @@ export default function DailyLeaderboard({
       const allScores = await fetchScoresByType(quizType);
       const dailyScores = allScores.filter((s) => s.quizDate === selectedDate);
 
-      const sorted = dailyScores.sort((a, b) => b.score - a.score);
+      const sorted = dailyScores.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.tiebreaker - b.tiebreaker; // lower tiebreaker wins
+      });
+
       setScores(sorted);
 
       if (searchedUsername) {

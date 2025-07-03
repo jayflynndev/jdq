@@ -9,8 +9,8 @@ export default function Home() {
         heroTitle="Welcome to Jay's Quiz Hub!"
         heroSubtitle="Quiz Recap, or JDQ Leaderboards!"
         heroDescription="Previously the home of just JDQ the invasion of the long form has begun! Now you can find the recap for the Thursday and Saturdays quiz all here in one place! You do not need to register to view the recap or leaderboards, only if you want to add your JDQ scores."
-        heroImage="/images/HeroPH.jpg"
-        heightClass="h-[600px] min-h-[300px]"
+        heroImage="public/images/HeroPH.jpg"
+        heightClass="h-auto md:h-[600px]"
       />
       <div className="max-w-4xl mx-auto px-4 py-12 grid grid-cols-1 sm:grid-cols-2 gap-6">
         <HomeCard

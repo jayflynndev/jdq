@@ -57,6 +57,33 @@ export default function AddScoreForm({ onScoreSubmitted }: AddScoreFormProps) {
       return;
     }
 
+    // Detect weekday name
+    const dayOfWeek = new Date(quizDate).toLocaleDateString("en-GB", {
+      weekday: "long",
+    });
+
+    // Determine JVQ dayType
+    const isJVQ = quizType === "JVQ";
+    const dayType =
+      isJVQ && (dayOfWeek === "Thursday" || dayOfWeek === "Saturday")
+        ? dayOfWeek
+        : null;
+
+    if (isJVQ && !dayType) {
+      setError("JVQ scores can only be submitted for Thursday or Saturday.");
+      return;
+    }
+
+    // Extra check for JVQ: Only allow after 8:30 PM on quiz day
+    if (isJVQ && quizDate === new Date().toISOString().split("T")[0]) {
+      const now = new Date();
+      const currentTime = now.getHours() + now.getMinutes() / 60;
+      if (currentTime < 20.5) {
+        setError("You can only submit JVQ scores after 8:30 PM on quiz day.");
+        return;
+      }
+    }
+
     try {
       await setDoc(docRef, {
         uid: user.uid,
@@ -65,6 +92,7 @@ export default function AddScoreForm({ onScoreSubmitted }: AddScoreFormProps) {
         score: parseInt(score),
         tiebreaker: parseInt(tiebreaker),
         quizType,
+        ...(isJVQ && { dayType }), // only add dayType for JVQ
       });
 
       setSuccess("Score successfully submitted!");
@@ -96,6 +124,7 @@ export default function AddScoreForm({ onScoreSubmitted }: AddScoreFormProps) {
             type="date"
             id="quizDate"
             value={quizDate}
+            max={new Date().toISOString().split("T")[0]} // Prevent future dates
             onChange={(e) => setQuizDate(e.target.value)}
             className="w-full px-3 py-2 border rounded"
             required
@@ -147,6 +176,7 @@ export default function AddScoreForm({ onScoreSubmitted }: AddScoreFormProps) {
             onChange={(e) => setTiebreaker(e.target.value)}
             className="w-full px-3 py-2 border rounded"
             min="0"
+            max="1000"
             required
           />
         </div>

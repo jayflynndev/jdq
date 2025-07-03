@@ -31,7 +31,8 @@ export default function JdqScoreSummary({ onBack }: Props) {
         const username = await fetchUsername(user.uid);
         setUsername(username);
 
-        const scores = await fetchScores(user.uid);
+        const scores = await fetchScores(user.uid, "JDQ");
+
         const averages = calculateAverages(scores);
         setWeeklyAverage(averages.weeklyAverage);
         setMonthlyAverage(averages.monthlyAverage);
@@ -100,7 +101,7 @@ export default function JdqScoreSummary({ onBack }: Props) {
           </tr>
         </tbody>
       </table>
-      <UserScoreTable />
+      <UserScoreTable quizType="JDQ" />
 
       <button
         onClick={onBack}
