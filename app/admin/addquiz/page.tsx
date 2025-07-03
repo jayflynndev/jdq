@@ -13,6 +13,8 @@ export default function AddQuizPage() {
   const [quizDay, setQuizDay] = useState("");
   const [quizDate, setQuizDate] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
+  // — NEW: state for the thumbnail URL
+  const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [questions, setQuestions] = useState(
     Array(5)
       .fill("")
@@ -85,7 +87,6 @@ export default function AddQuizPage() {
         return uploaded.filter(Boolean);
       };
 
-      // const part1Images = await uploadImages(imageUploads.part1, "part1");
       const part1Images = await uploadImages(imageUploads.part1);
       const part2Images = await uploadImages(imageUploads.part2);
       const formattedRounds = questions.map((qSet, index) => ({
@@ -93,15 +94,16 @@ export default function AddQuizPage() {
         questions: qSet,
       }));
 
+      // Build your payload, now including thumbnailUrl
       const payload = {
         quizDay,
         quizDate,
         youtubeUrl,
+        thumbnailUrl, // <— NEW: include the thumbnail URL
         accessCodes: {
           part1: part1Code,
           part2: part2Code,
         },
-
         parts: {
           part1: {
             rounds: formattedRounds.slice(0, 3),
@@ -151,6 +153,14 @@ export default function AddQuizPage() {
           value={youtubeUrl}
           onChange={(e) => setYoutubeUrl(e.target.value)}
         />
+        {/* — NEW: Thumbnail URL input */}
+        <input
+          className="w-full p-2 rounded border"
+          type="url"
+          placeholder="Thumbnail URL (e.g. YouTube maxresdefault.jpg)"
+          value={thumbnailUrl}
+          onChange={(e) => setThumbnailUrl(e.target.value)}
+        />
         <input
           className="w-full p-2 rounded border"
           type="text"
@@ -190,19 +200,19 @@ export default function AddQuizPage() {
       ))}
 
       {/* Images Uploads */}
-      {["part1", "part2"].map((part) => (
+      {(["part1", "part2"] as const).map((part) => (
         <div key={part} className="mb-10">
           <h3 className="text-lg font-bold text-yellow-300 mb-2">
             Any Images ({part.toUpperCase()})
           </h3>
           <button
             className="bg-blue-600 text-white px-4 py-1 rounded mb-4"
-            onClick={() => handleAddImageField(part as "part1" | "part2")}
+            onClick={() => handleAddImageField(part)}
           >
             + Add Image
           </button>
 
-          {imageUploads[part as "part1" | "part2"].map((img, index) => (
+          {imageUploads[part].map((img, index) => (
             <div key={index} className="flex gap-2 items-center mb-2">
               <input
                 type="text"
@@ -210,12 +220,7 @@ export default function AddQuizPage() {
                 placeholder="Round / Question"
                 value={img.label}
                 onChange={(e) =>
-                  handleImageChange(
-                    part as "part1" | "part2",
-                    index,
-                    "label",
-                    e.target.value
-                  )
+                  handleImageChange(part, index, "label", e.target.value)
                 }
               />
               <input
@@ -223,7 +228,7 @@ export default function AddQuizPage() {
                 accept="image/*"
                 onChange={(e) =>
                   handleImageChange(
-                    part as "part1" | "part2",
+                    part,
                     index,
                     "file",
                     e.target.files?.[0] || null
@@ -231,9 +236,7 @@ export default function AddQuizPage() {
                 }
               />
               <button
-                onClick={() =>
-                  handleRemoveImageField(part as "part1" | "part2", index)
-                }
+                onClick={() => handleRemoveImageField(part, index)}
                 className="text-red-500 font-bold text-xl"
               >
                 ×
