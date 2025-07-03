@@ -1,16 +1,20 @@
 // app/lb-select/jvpqlb/page.tsx (or wherever your select page lives)
-import Hero from "@/components/Hero";
+import HomeHero from "@/components/Hero";
 import LBCard from "@/components/LBCard";
 
 export default function LeaderboardSelectPage() {
   return (
-    <div className="bg-gradient-to-t from-purple-800 to-purple-400">
-      <Hero
-        heroTitle="JDQ and JVPQ Leaderboards!"
-        heroSubtitle="See your place against global players!"
-        heroDescription=""
-        heroImage="/public/images/HeroPH.jpg"
-        heightClass="min-h-[300px] md:h-[600px]"
+    <div
+      className="bg-gradient-to-t from-purple-900 to-purple-200
+     text-white"
+    >
+      <HomeHero
+        heroTitle="JDQ and JVQ Leaderboards!"
+        heroSubtitle="What is your position on the Leaderboard?"
+        heroDescription="Now you can add your score to all the leader boards! Whether you play the JDQ, or the Thursday/Saturday quizzes, you can now share your scores with the world! (Remember, you need to create an account to be able to add your scores!"
+        heroImage="/images/HeroPH.jpg"
+        heightClass="min-h-[600px]"
+        overlay={true}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8 px-4">

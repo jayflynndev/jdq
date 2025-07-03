@@ -5,12 +5,9 @@ import { onAuthStateChanged } from "firebase/auth";
 import { fetchUsername } from "@/utils/fetchUsername";
 import { fetchScores } from "@/utils/fetchScores";
 import { calculateAverages } from "@/utils/calculateAverages";
-import { fetchLeaderboardData } from "@/utils/fetchLeaderboardData";
-import UserScoreTable from "@/components/UserScoreTable";
 
-interface DataItem {
-  username: string;
-}
+import UserScoreTable from "@/components/UserScoreTable";
+import Link from "next/link";
 
 interface Props {
   onBack: () => void;
@@ -21,9 +18,6 @@ export default function JdqScoreSummary({ onBack }: Props) {
   const [monthlyAverage, setMonthlyAverage] = useState(0);
   const [allTimeAverage, setAllTimeAverage] = useState(0);
   const [username, setUsername] = useState("");
-  const [weeklyPosition, setWeeklyPosition] = useState<number | null>(null);
-  const [monthlyPosition, setMonthlyPosition] = useState<number | null>(null);
-  const [allTimePosition, setAllTimePosition] = useState<number | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -38,24 +32,7 @@ export default function JdqScoreSummary({ onBack }: Props) {
         setMonthlyAverage(averages.monthlyAverage);
         setAllTimeAverage(averages.allTimeAverage);
 
-        const { weeklyData, monthlyData, allTimeData } =
-          await fetchLeaderboardData(
-            new Date().toISOString().split("T")[0],
-            new Date(
-              new Date().setDate(new Date().getDate() - new Date().getDay())
-            ),
-            new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-            new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
-            new Date(0),
-            new Date()
-          );
-
-        const findPosition = (data: DataItem[], name: string) =>
-          data.findIndex((u) => u.username === name) + 1;
-
-        setWeeklyPosition(findPosition(weeklyData, username));
-        setMonthlyPosition(findPosition(monthlyData, username));
-        setAllTimePosition(findPosition(allTimeData, username));
+        //
       }
     });
 
@@ -88,15 +65,13 @@ export default function JdqScoreSummary({ onBack }: Props) {
             </td>
           </tr>
           <tr>
-            <td className="py-2 border border-gray-300">Position</td>
-            <td className="py-2 border border-gray-300">
-              {weeklyPosition ?? "Loading..."}
-            </td>
-            <td className="py-2 border border-gray-300">
-              {monthlyPosition ?? "Loading..."}
-            </td>
-            <td className="py-2 border border-gray-300">
-              {allTimePosition ?? "Loading..."}
+            <td
+              colSpan={4}
+              className="border border-gray-300 bg-slate-300 text-center font-semibold py-4"
+            >
+              To see your position against others, head to the leaderboard page
+              ➡️ {""}
+              <Link href="/lb-select/jdqlb">here.</Link> ⬅️
             </td>
           </tr>
         </tbody>

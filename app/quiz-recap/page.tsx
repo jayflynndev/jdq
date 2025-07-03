@@ -50,10 +50,12 @@ export default function QuizRecapPage() {
   return (
     <main>
       <HomeHero
-        heroTitle="Quiz Recap"
-        heroSubtitle="Catch up on the action"
-        heroDescription="Missed a quiz or want to relive it? Explore the latest recaps below."
-        heightClass="h-auto md:h-[600px]"
+        heroTitle="JVQ Recaps"
+        heroSubtitle="Whether Thursday or Saturday, you can find those questions and Pictures here!"
+        heroDescription="If playing live or premiere on the night in question, it will be the current quiz you need to select. If you are playing on catch-up, check the dates in the Previous Quizes section."
+        heroImage="/images/HeroPH.jpg"
+        heightClass="min-h-[600px]"
+        overlay={true}
       />
 
       <div className="px-4 py-6 max-w-5xl mx-auto">

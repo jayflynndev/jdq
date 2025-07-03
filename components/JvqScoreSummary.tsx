@@ -8,10 +8,7 @@ import { fetchScores } from "@/utils/fetchScores";
 import { calculateAveragesJVQ } from "@/utils/calculateAveragesJVQ";
 import { fetchLeaderboardData } from "@/utils/fetchLeaderboardData";
 import UserScoreTable from "@/components/UserScoreTable";
-
-interface DataItem {
-  username: string;
-}
+import Link from "next/link";
 
 interface Props {
   onBack: () => void;
@@ -22,9 +19,6 @@ export default function JvqScoreSummary({ onBack }: Props) {
   const [saturdayAverage, setSaturdayAverage] = useState(0);
   const [combinedAverage, setCombinedAverage] = useState(0);
   const [username, setUsername] = useState("");
-  const [thursdayPosition, setThursdayPosition] = useState<number | null>(null);
-  const [saturdayPosition, setSaturdayPosition] = useState<number | null>(null);
-  const [combinedPosition, setCombinedPosition] = useState<number | null>(null);
 
   // Helper function to get last X day (4 = Thursday, 6 = Saturday)
   const getLast = (targetDay: number): { str: string; date: Date } => {
@@ -51,11 +45,7 @@ export default function JvqScoreSummary({ onBack }: Props) {
       const { str: lastThuStr, date: lastThuDate } = getLast(4);
       const { date: lastSatDate } = getLast(6);
 
-      const {
-        dailyData: thursdayData,
-        weeklyData: saturdayData,
-        allTimeData: combinedData,
-      } = await fetchLeaderboardData(
+      const {} = await fetchLeaderboardData(
         lastThuStr,
         lastThuDate,
         lastSatDate,
@@ -63,13 +53,6 @@ export default function JvqScoreSummary({ onBack }: Props) {
         new Date(0),
         new Date()
       );
-
-      const findPos = (arr: DataItem[], u: string) =>
-        arr.findIndex((i) => i.username === u) + 1;
-
-      setThursdayPosition(findPos(thursdayData, name));
-      setSaturdayPosition(findPos(saturdayData, name));
-      setCombinedPosition(findPos(combinedData, name));
     });
 
     return () => unsubscribe();
@@ -102,15 +85,13 @@ export default function JvqScoreSummary({ onBack }: Props) {
             </td>
           </tr>
           <tr>
-            <td className="py-2 border border-gray-300">Position</td>
-            <td className="py-2 border border-gray-300">
-              {thursdayPosition ?? "Loading..."}
-            </td>
-            <td className="py-2 border border-gray-300">
-              {saturdayPosition ?? "Loading..."}
-            </td>
-            <td className="py-2 border border-gray-300">
-              {combinedPosition ?? "Loading..."}
+            <td
+              colSpan={4}
+              className="border border-gray-300 bg-slate-300 text-center font-semibold py-4"
+            >
+              To see your position against others, head to the leaderboard page
+              ➡️ {""}
+              <Link href="/lb-select/jvpqlb">here.</Link> ⬅️
             </td>
           </tr>
         </tbody>
