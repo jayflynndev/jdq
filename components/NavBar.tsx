@@ -84,7 +84,7 @@ export default function NavBar() {
             {user ? (
               <>
                 <MenuItems
-                  title="Profile"
+                  title="Add Score & Profile"
                   href="/profile"
                   onClick={handleMenuItemClick}
                 />
@@ -119,7 +119,7 @@ export default function NavBar() {
 
           {user ? (
             <>
-              <MenuItems title="Profile" href="/profile" />
+              <MenuItems title="Add Score & Profile" href="/profile" />
               <MenuItems title="Sign Out" href="/" onClick={handleSignOut} />
             </>
           ) : (
