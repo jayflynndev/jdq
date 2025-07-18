@@ -89,6 +89,11 @@ export default function NavBar() {
                   onClick={handleMenuItemClick}
                 />
                 <MenuItems
+                  title="Contact Us"
+                  href="/contact"
+                  onClick={handleMenuItemClick}
+                />
+                <MenuItems
                   title="Sign Out"
                   href="/"
                   onClick={() => {
@@ -120,6 +125,7 @@ export default function NavBar() {
           {user ? (
             <>
               <MenuItems title="Add Score & Profile" href="/profile" />
+              <MenuItems title="Contact Us!" href="/contact" />
               <MenuItems title="Sign Out" href="/" onClick={handleSignOut} />
             </>
           ) : (
