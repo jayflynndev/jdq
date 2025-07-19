@@ -2,11 +2,19 @@
 import { useEffect, useState } from "react";
 import { db, app } from "@/app/firebase/config";
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+  doc,
+  getDoc,
+} from "firebase/firestore";
 
 export default function ContactPage() {
   // Track the user and auth state
   const [user, setUser] = useState<User | null | undefined>(undefined);
+  const [username, setUsername] = useState<string>("");
+  const [usernameLoading, setUsernameLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
     "idle"
@@ -21,8 +29,36 @@ export default function ContactPage() {
     return () => unsubscribe();
   }, []);
 
-  // Show loading state while auth loads
-  if (user === undefined) {
+  // Fetch username from Firestore after user loads
+  useEffect(() => {
+    const fetchUsername = async () => {
+      if (user) {
+        setUsernameLoading(true);
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          if (userDoc.exists() && userDoc.data().username) {
+            setUsername(userDoc.data().username);
+          } else if (user.displayName) {
+            setUsername(user.displayName);
+          } else if (user.email) {
+            setUsername(user.email.split("@")[0]);
+          } else {
+            setUsername("");
+          }
+        } catch {
+          setUsername(
+            user.displayName || (user.email ? user.email.split("@")[0] : "")
+          );
+        } finally {
+          setUsernameLoading(false);
+        }
+      }
+    };
+    fetchUsername();
+  }, [user]);
+
+  // Show loading state while auth or username loads
+  if (user === undefined || (user && usernameLoading)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-700 via-purple-500 to-purple-300 py-12 px-4">
         <div className="bg-white/80 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
@@ -54,9 +90,6 @@ export default function ContactPage() {
     );
   }
 
-  // Use displayName or email prefix as username fallback
-  const username =
-    user.displayName || (user.email ? user.email.split("@")[0] : "");
   const email = user.email || "";
 
   // Form submission

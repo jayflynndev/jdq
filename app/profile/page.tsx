@@ -1,4 +1,3 @@
-// app/profile/page.tsx (or wherever your Profile lives)
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -9,10 +8,11 @@ import ProfileForm from "@/components/profileForm";
 import AddScoreForm from "@/components/AddScoreForm";
 import JdqScoreSummary from "@/components/JdqScoreSummary";
 import JvqScoreSummary from "@/components/JvqScoreSummary";
+import { ContactReplies } from "@/components/ContactReplies";
 
 export default function Profile() {
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState<string | null>(null);
   const [currentPassword, setCurrentPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -29,9 +29,9 @@ export default function Profile() {
         setEmail(user.email || "");
         try {
           const name = await fetchUsername(user.uid);
-          setUsername(name);
+          setUsername(name); // This could be null if not set
         } catch {
-          setUsername("Player");
+          setUsername(null);
         }
       } else {
         router.push("/sign-in");
@@ -40,10 +40,16 @@ export default function Profile() {
     return () => unsubscribe();
   }, [router]);
 
+  // Robust display name logic: username > email prefix > Player
+  const displayName =
+    (username && username.trim()) ||
+    (email ? email.split("@")[0] : "") ||
+    "Player";
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-4xl font-bold mb-4">
-        {username || "User"}, welcome to your profile
+        {displayName}, welcome to your profile
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -98,7 +104,7 @@ export default function Profile() {
 
           <ProfileForm
             email={email}
-            username={username}
+            username={username || ""}
             currentPassword={currentPassword}
             setEmail={setEmail}
             setUsername={setUsername}
@@ -111,6 +117,7 @@ export default function Profile() {
           {error && <p className="text-red-500 mt-2">{error}</p>}
         </div>
       </div>
+      <ContactReplies />
     </div>
   );
 }
