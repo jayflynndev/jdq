@@ -10,6 +10,7 @@ import {
   arrayUnion,
   setDoc,
   getDocs,
+  Unsubscribe,
 } from "firebase/firestore";
 import { QuizCard } from "@/components/liveQuiz/QuizCard";
 
@@ -53,28 +54,30 @@ export default function QuizListPage() {
       globalPosition: number;
     };
   }>({});
+  const [uidToUsername, setUidToUsername] = useState<{ [uid: string]: string }>(
+    {}
+  );
 
   const router = useRouter();
   // 1. Listen to quizzes, then fetch pub details for each
   useEffect(() => {
     setLoadingQuizzes(true);
-    const unsub = onSnapshot(collection(db, "liveQuizzes"), async (snap) => {
-      const quizArr = snap.docs.map((doc) => ({
+
+    const unsubQuiz = onSnapshot(collection(db, "liveQuizzes"), (quizSnap) => {
+      const quizArr = quizSnap.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       })) as LiveQuiz[];
 
-      // For each quiz, fetch its pubs using pubIds
-      const quizzesWithPubs = await Promise.all(
-        quizArr.map(async (quiz) => {
-          try {
-            // Defensive: only fetch if quiz.id is truthy
-            if (!quiz.id) {
-              return { ...quiz, pubs: [] };
-            }
-            const pubsSnap = await getDocs(
-              collection(db, "liveQuizzes", quiz.id, "pubs")
-            );
+      const pubUnsubs: Unsubscribe[] = [];
+      const quizMap: { [quizId: string]: LiveQuiz } = {};
+
+      quizArr.forEach((quiz) => {
+        quizMap[quiz.id] = { ...quiz, pubs: [] };
+
+        const unsubPubs = onSnapshot(
+          collection(db, "liveQuizzes", quiz.id, "pubs"),
+          (pubsSnap) => {
             const pubs: Pub[] = pubsSnap.docs.map((doc) => {
               const data = doc.data();
               return {
@@ -84,26 +87,51 @@ export default function QuizListPage() {
                 maxTeams: data.maxTeams || 10,
               };
             });
-            return {
-              ...quiz,
-              pubs,
-            };
-          } catch (err) {
-            console.error(
-              `Failed to fetch pubs for quiz ${quiz.id}:`,
-              (err as Error).message
-            );
-            // Still return the quiz object so the page doesn't break
-            return { ...quiz, pubs: [] };
+            quizMap[quiz.id].pubs = pubs;
+            setQuizzes(Object.values(quizMap));
           }
+        );
+        pubUnsubs.push(unsubPubs);
+      });
+
+      setLoadingQuizzes(false);
+
+      return () => {
+        pubUnsubs.forEach((unsub) => unsub());
+      };
+    });
+
+    return () => unsubQuiz();
+  }, []);
+
+  useEffect(() => {
+    const allUids = Array.from(
+      new Set(
+        quizzes
+          .flatMap((quiz) => quiz.pubs || [])
+          .flatMap((pub) => pub.members || [])
+      )
+    );
+    if (allUids.length === 0) return;
+    const fetchUsernames = async () => {
+      const uidMap: { [uid: string]: string } = {};
+      await Promise.all(
+        allUids.map(async (uid) => {
+          if (uidToUsername[uid]) {
+            uidMap[uid] = uidToUsername[uid];
+            return;
+          }
+          const userSnap = await getDoc(doc(db, "users", uid));
+          uidMap[uid] = userSnap.exists()
+            ? userSnap.data().username || uid
+            : uid;
         })
       );
-
-      setQuizzes(quizzesWithPubs);
-      setLoadingQuizzes(false);
-    });
-    return unsub;
-  }, []);
+      setUidToUsername((prev) => ({ ...prev, ...uidMap }));
+    };
+    fetchUsernames();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizzes]);
 
   // User Firestore doc
   useEffect(() => {
@@ -337,6 +365,7 @@ export default function QuizListPage() {
               onRejoin={handleRejoin}
               onLock={handleLock}
               stats={userStats[quiz.id]}
+              uidToUsername={uidToUsername}
             />
           ))
         )}

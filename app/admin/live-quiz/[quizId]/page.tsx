@@ -133,18 +133,19 @@ export default function LiveQuizDashboard() {
 
   // --- Pubs (unchanged)
   useEffect(() => {
-    if (!authChecked || !isAdmin) return;
-    const fetchPubs = async () => {
-      const pubsSnap = await getDocs(
-        collection(db, "liveQuizzes", quizId, "pubs")
-      );
-      const pubsArr = pubsSnap.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      })) as Pub[];
-      setPubs(pubsArr);
-    };
-    fetchPubs();
+    if (!authChecked || !isAdmin || !quizId) return;
+    // Listen in real-time for all pub membership changes!
+    const unsub = onSnapshot(
+      collection(db, "liveQuizzes", quizId, "pubs"),
+      (pubsSnap) => {
+        const pubsArr = pubsSnap.docs.map((d) => ({
+          id: d.id,
+          ...d.data(),
+        })) as Pub[];
+        setPubs(pubsArr);
+      }
+    );
+    return () => unsub();
   }, [authChecked, isAdmin, quizId]);
 
   // === ADMIN COUNTDOWN DISPLAY ONLY (unchanged except collectCountdown lines added) ===
