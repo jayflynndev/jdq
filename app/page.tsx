@@ -2,7 +2,6 @@
 import Section from "../components/Section";
 import HomeHero from "../components/Hero";
 import HomeCard from "../components/HomeCard";
-import AdBanner from "../components/AdBanner";
 import { FaClipboardList, FaTrophy } from "react-icons/fa";
 
 export default function HomePage() {
@@ -47,10 +46,7 @@ export default function HomePage() {
         </div>
       </Section>
 
-      {/* Ad Banner Section */}
-      <Section bgClass="bg-gradient-to-t from-primary-900 to-primary-200">
-        <AdBanner />
-      </Section>
+      {/* Ad Banner Section TBC */}
     </>
   );
 }
