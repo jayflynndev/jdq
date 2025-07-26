@@ -99,42 +99,45 @@ export default function PubRoomPage() {
       setQuiz(snap.exists() ? { id: snap.id, ...snap.data() } : null);
       setLoading(false);
     });
-    const unsubPub = onSnapshot(doc(db, "pubs", pubId), async (snap) => {
-      if (!snap.exists()) {
-        setPub(null);
-        setPubUsernames([]);
-        return;
-      }
-      const snapData = snap.data();
-      const pubData: { pubId: string; members?: string[] | string } = {
-        pubId: snap.id,
-        ...snapData,
-      };
-      setPub(pubData);
+    const unsubPub = onSnapshot(
+      doc(db, "liveQuizzes", quizId, "pubs", pubId),
+      async (snap) => {
+        if (!snap.exists()) {
+          setPub(null);
+          setPubUsernames([]);
+          return;
+        }
+        const snapData = snap.data();
+        const pubData: { pubId: string; members?: string[] | string } = {
+          pubId: snap.id,
+          ...snapData,
+        };
+        setPub(pubData);
 
-      const memberUIDs: string[] = Array.isArray(pubData.members)
-        ? pubData.members
-        : pubData.members
-        ? [pubData.members]
-        : [];
-      if (memberUIDs.length === 0) {
-        setPubUsernames([]);
-      } else {
-        const usernames: string[] = [];
-        await Promise.all(
-          memberUIDs.map(async (uid) => {
-            const userSnap = await getDoc(doc(db, "users", uid));
-            if (userSnap.exists()) {
-              const username = userSnap.data().username || uid;
-              usernames.push(username);
-            } else {
-              usernames.push(uid);
-            }
-          })
-        );
-        setPubUsernames(usernames);
+        const memberUIDs: string[] = Array.isArray(pubData.members)
+          ? pubData.members
+          : pubData.members
+          ? [pubData.members]
+          : [];
+        if (memberUIDs.length === 0) {
+          setPubUsernames([]);
+        } else {
+          const usernames: string[] = [];
+          await Promise.all(
+            memberUIDs.map(async (uid) => {
+              const userSnap = await getDoc(doc(db, "users", uid));
+              if (userSnap.exists()) {
+                const username = userSnap.data().username || uid;
+                usernames.push(username);
+              } else {
+                usernames.push(uid);
+              }
+            })
+          );
+          setPubUsernames(usernames);
+        }
       }
-    });
+    );
     return () => {
       unsubQuiz();
       unsubPub();

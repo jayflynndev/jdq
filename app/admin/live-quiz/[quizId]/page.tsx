@@ -135,7 +135,9 @@ export default function LiveQuizDashboard() {
   useEffect(() => {
     if (!authChecked || !isAdmin) return;
     const fetchPubs = async () => {
-      const pubsSnap = await getDocs(collection(db, "pubs"));
+      const pubsSnap = await getDocs(
+        collection(db, "liveQuizzes", quizId, "pubs")
+      );
       const pubsArr = pubsSnap.docs.map((d) => ({
         id: d.id,
         ...d.data(),
@@ -143,7 +145,7 @@ export default function LiveQuizDashboard() {
       setPubs(pubsArr);
     };
     fetchPubs();
-  }, [authChecked, isAdmin]);
+  }, [authChecked, isAdmin, quizId]);
 
   // === ADMIN COUNTDOWN DISPLAY ONLY (unchanged except collectCountdown lines added) ===
   useEffect(() => {
