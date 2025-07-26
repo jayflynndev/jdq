@@ -201,13 +201,7 @@ export default function QuizListPage() {
           // 5. Positions
           const username = userDoc.username || authUser.uid;
           // Try to find by username, then fallback to UID
-          const myEntry =
-            leaderboard.find(
-              (u) =>
-                u.name === username ||
-                (u.pubId === currentPubId &&
-                  (u.name === username || u.name === authUser.uid))
-            ) || leaderboard.find((u) => u.name === authUser.uid);
+          // Removed unused variable 'myEntry'
           const pubEntryIdx = pubLeaderboard.findIndex(
             (u) => u.name === username || u.name === authUser.uid
           );
