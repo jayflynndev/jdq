@@ -45,10 +45,10 @@ export default function HomeHero({
         <h1 className="text-4xl md:text-5xl font-extrabold drop-shadow-lg">
           {heroTitle}
         </h1>
-        <h2 className="text-xl md:text-2xl font-semibold text-purple-200">
+        <h2 className="text-xl md:text-2xl font-bold text-purple-200">
           {heroSubtitle}
         </h2>
-        <p className="text-md md:text-lg">{heroDescription}</p>
+        <p className="text-md md:text-xl font-bold">{heroDescription}</p>
       </div>
     </div>
   );

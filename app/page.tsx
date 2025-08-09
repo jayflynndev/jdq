@@ -16,7 +16,7 @@ export default function HomePage() {
         <HomeHero
           heroTitle="Welcome to Jay’s Quiz Hub!"
           heroSubtitle="Quiz Recaps & JDQ Leaderboards"
-          heroDescription="From quick dailies to the big screen experience—relive Thursday & Saturday’s epic quizzes, view your scores, and climb the leaderboard!"
+          heroDescription="**PLANNED MAINTANANCE** QUIZ HUB WILL BE UNAVAILABLE ON SUNDAY 10th AUGUST FROM MORNING UNTIL MONDAY 11th AUGUST 5AM. SORRY FOR THE INCONVENIENCE!"
           heroImage="/images/HeroPH.jpg"
           heightClass="min-h-[600px]"
           overlay
