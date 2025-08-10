@@ -6,7 +6,7 @@ import AddScoreForm from "@/components/AddScoreForm";
 import JdqScoreSummary from "@/components/JdqScoreSummary";
 import JvqScoreSummary from "@/components/JvqScoreSummary";
 import ContactThreads from "@/components/ContactThreads";
-import ProfileForm from "@/components/ProfileForm";
+import ProfileForm from "@/components/ProfileFormClient";
 
 export default function Profile() {
   const [email, setEmail] = useState("");
