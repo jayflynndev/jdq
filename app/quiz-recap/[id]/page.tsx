@@ -48,27 +48,15 @@ function VideoEmbed({ src, sticky }: { src: string; sticky: boolean }) {
         }
         rounded-lg overflow-hidden transition-all duration-300
       `}
+      style={!sticky ? { paddingBottom: "56.25%" } : {}}
     >
-      {!sticky && (
-        <div className="w-full relative" style={{ paddingBottom: "56.25%" }}>
-          <iframe
-            className="absolute inset-0 w-full h-full"
-            src={src}
-            title="Quiz Video"
-            allow="autoplay; encrypted-media"
-            allowFullScreen
-          />
-        </div>
-      )}
-      {sticky && (
-        <iframe
-          className="absolute inset-0 w-full h-full"
-          src={src}
-          title="Quiz Video"
-          allow="autoplay; encrypted-media"
-          allowFullScreen
-        />
-      )}
+      <iframe
+        className="absolute inset-0 w-full h-full"
+        src={src}
+        title="Quiz Video"
+        allow="autoplay; encrypted-media"
+        allowFullScreen
+      />
     </div>
   );
 }

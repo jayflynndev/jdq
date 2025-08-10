@@ -152,7 +152,8 @@ export default function ContactForm() {
         </form>
         {status === "sent" && (
           <p className="mt-4 text-center text-green-600 font-semibold">
-            Thank you! Your message has been sent.
+            Thank you! Your message has been sent. Look for replies in your
+            profile!
           </p>
         )}
         {status === "error" && (
