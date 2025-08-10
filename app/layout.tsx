@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Quicksand } from "next/font/google";
 import "./globals.css";
-import NavBar from "@/components/NavBar";
+// import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
 
 const quicksand = Quicksand({
@@ -25,7 +25,7 @@ export default function RootLayout({
         <meta name="google-adsense-account" content="ca-pub-1521571031670829" />
       </head>
       <body>
-        <NavBar />
+        {/* <NavBar /> */}
         {children}
         <Footer />
       </body>
