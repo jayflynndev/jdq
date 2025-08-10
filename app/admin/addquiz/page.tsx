@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { db, storage } from "@/app/firebase/config"; // adjust this path to your Firebase config
-import { collection, addDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { v4 as uuid } from "uuid";
 import { useRouter } from "next/navigation";
+import { v4 as uuid } from "uuid";
+import { supabase } from "@/supabaseClient";
 
 export default function AddQuizPage() {
   const router = useRouter();
@@ -13,7 +11,6 @@ export default function AddQuizPage() {
   const [quizDay, setQuizDay] = useState("");
   const [quizDate, setQuizDate] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
-  // — NEW: state for the thumbnail URL
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [questions, setQuestions] = useState(
     Array(5)
@@ -32,6 +29,7 @@ export default function AddQuizPage() {
   const [part1Code, setPart1Code] = useState("");
   const [part2Code, setPart2Code] = useState("");
 
+  // Handle round question input
   const handleQuestionChange = (
     roundIndex: number,
     qIndex: number,
@@ -42,6 +40,7 @@ export default function AddQuizPage() {
     setQuestions(updated);
   };
 
+  // Handle images UI
   const handleAddImageField = (part: "part1" | "part2") => {
     setImageUploads((prev) => ({
       ...prev,
@@ -70,17 +69,31 @@ export default function AddQuizPage() {
     setImageUploads((prev) => ({ ...prev, [part]: updated }));
   };
 
+  // Upload an image to Supabase Storage and return its URL
+  const uploadImageToSupabase = async (file: File): Promise<string> => {
+    const filePath = `quiz-images/${uuid()}-${file.name}`;
+    const { error } = await supabase.storage
+      .from("quiz-images")
+      .upload(filePath, file, { upsert: true });
+    if (error) throw error;
+    // Get the public URL for the image
+    const { data: urlData } = supabase.storage
+      .from("quiz-images")
+      .getPublicUrl(filePath);
+    return urlData.publicUrl;
+  };
+
+  // Main submit handler
   const handleSubmit = async () => {
     setUploading(true);
 
     try {
+      // Upload images for both parts and keep label with URL
       const uploadImages = async (images: ImageUpload[]) => {
         const uploaded = await Promise.all(
           images.map(async ({ label, file }) => {
             if (!file) return null;
-            const fileRef = ref(storage, `quiz-images/${uuid()}-${file.name}`);
-            await uploadBytes(fileRef, file);
-            const url = await getDownloadURL(fileRef);
+            const url = await uploadImageToSupabase(file);
             return { label, url };
           })
         );
@@ -89,18 +102,19 @@ export default function AddQuizPage() {
 
       const part1Images = await uploadImages(imageUploads.part1);
       const part2Images = await uploadImages(imageUploads.part2);
+
       const formattedRounds = questions.map((qSet, index) => ({
         round: index + 1,
         questions: qSet,
       }));
 
-      // Build your payload, now including thumbnailUrl
+      // Build the Supabase payload
       const payload = {
-        quizDay,
-        quizDate,
-        youtubeUrl,
-        thumbnailUrl, // <— NEW: include the thumbnail URL
-        accessCodes: {
+        quiz_day: quizDay,
+        quiz_date: quizDate,
+        youtube_url: youtubeUrl,
+        thumbnail_url: thumbnailUrl,
+        access_codes: {
           part1: part1Code,
           part2: part2Code,
         },
@@ -114,10 +128,12 @@ export default function AddQuizPage() {
             images: part2Images,
           },
         },
-        createdAt: new Date().toISOString(),
+        // created_at: default handled by Supabase if default now()
       };
 
-      await addDoc(collection(db, "quizzes"), payload);
+      const { error } = await supabase.from("quizzes").insert([payload]);
+      if (error) throw error;
+
       alert("Quiz saved successfully!");
       router.push("/admin");
     } catch (err) {
@@ -153,7 +169,6 @@ export default function AddQuizPage() {
           value={youtubeUrl}
           onChange={(e) => setYoutubeUrl(e.target.value)}
         />
-        {/* — NEW: Thumbnail URL input */}
         <input
           className="w-full p-2 rounded border"
           type="url"

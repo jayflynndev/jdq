@@ -10,7 +10,7 @@ interface LeaderboardTabsProps {
   quizType: "JDQ" | "JVQ";
 }
 
-export default function LeaderboardTabs({ quizType }: LeaderboardTabsProps) {
+export default function JDQLeaderboardTabs({ quizType }: LeaderboardTabsProps) {
   const [selectedView, setSelectedView] = useState<
     "daily" | "weekly" | "monthly" | "allTime"
   >("daily");

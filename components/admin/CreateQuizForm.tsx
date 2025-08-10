@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { db } from "@/app/firebase/config";
-import { collection, addDoc, getDocs, doc, setDoc } from "firebase/firestore";
+import { supabase } from "@/lib/supabaseClient";
 import { FaPlus } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 
@@ -9,8 +8,7 @@ interface Props {
   onCreated: () => void;
   onClose: () => void;
 }
-
-type Pub = { id: string; name: string; maxTeams: number };
+type Pub = { id: string; name: string; max_teams: number };
 
 export default function CreateQuizForm({ onCreated, onClose }: Props) {
   // Quiz fields
@@ -34,20 +32,18 @@ export default function CreateQuizForm({ onCreated, onClose }: Props) {
   // Fetch pubs on mount (and after new pub is added)
   const loadPubs = async () => {
     setLoadingPubs(true);
-    const snap = await getDocs(collection(db, "pubs"));
-    setAllPubs(
-      snap.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Pub[]
-    );
+    const { data } = await supabase
+      .from("livepubs")
+      .select("*")
+      .order("name", { ascending: true });
+    setAllPubs((data as Pub[]) || []);
     setLoadingPubs(false);
   };
   useEffect(() => {
     loadPubs();
   }, []);
 
-  // --- Quiz PARTS and ROUNDS logic (same as before) ---
+  // --- Quiz PARTS and ROUNDS logic (unchanged) ---
   const addPart = () => {
     setParts((prev) => [
       ...prev,
@@ -123,29 +119,28 @@ export default function CreateQuizForm({ onCreated, onClose }: Props) {
       return;
     }
     try {
-      // Get the new quiz doc ref and ID
-      const docRef = await addDoc(collection(db, "liveQuizzes"), {
-        title,
-        startTime,
-        livestreamUrl,
-        parts,
-        status: "waiting",
-        pubIds: selectedPubIds,
-      });
-      for (const pubId of selectedPubIds) {
-        const pub = allPubs.find((p) => p.id === pubId);
-        if (pub) {
-          // Create a pub doc under liveQuizzes/{quizId}/pubs/{pubId}
-          await setDoc(doc(db, "liveQuizzes", docRef.id, "pubs", pub.id), {
-            pubId: pub.id,
-            name: pub.name,
-            maxTeams: pub.maxTeams,
-            members: [], // Start empty!
-          });
-        }
-      }
-      // Redirect to the quiz admin/dashboard page
-      router.push(`/admin/live-quiz/${docRef.id}`);
+      // Insert the quiz as one row with JSON for parts and pub ids
+      const { data, error } = await supabase
+        .from("livequizzes")
+        .insert([
+          {
+            title,
+            start_time: startTime ? new Date(startTime).toISOString() : null,
+            livestream_url: livestreamUrl,
+            parts: parts, // stored as JSONB
+            status: "waiting",
+            pub_ids: selectedPubIds,
+            quizmaster_id: (await supabase.auth.getUser()).data.user?.id,
+          },
+        ])
+        .select();
+
+      if (error) throw error;
+
+      // Optionally: Insert quiz-pub join table or expand parts into a `livequiz_parts` table
+      // For now, just redirect to dashboard for new quiz
+      const quizId = data && data[0]?.id;
+      router.push(`/admin/live-quiz/${quizId}`);
       if (onCreated) onCreated();
     } catch {
       setError("Failed to create quiz. Try again.");
@@ -172,11 +167,14 @@ export default function CreateQuizForm({ onCreated, onClose }: Props) {
       setErr(null);
       setSaving(true);
       try {
-        await addDoc(collection(db, "pubs"), {
-          name,
-          maxTeams,
-          createdAt: new Date(),
-        });
+        const { error } = await supabase.from("livepubs").insert([
+          {
+            name,
+            max_teams: maxTeams,
+            created_at: new Date().toISOString(),
+          },
+        ]);
+        if (error) throw error;
         onAdded();
         setName("");
         setMaxTeams(10);

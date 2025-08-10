@@ -1,4 +1,4 @@
-import LeaderboardTabs from "@/components/LeaderboardTabs";
+import JDQLeaderboardTabs from "@/components/JDQLeaderboardTabs";
 import Section from "@/components/Section";
 
 export default function JDQLeaderboardPage() {
@@ -17,7 +17,7 @@ export default function JDQLeaderboardPage() {
           scores from a user are added
         </p>
 
-        <LeaderboardTabs quizType="JDQ" />
+        <JDQLeaderboardTabs quizType="JDQ" />
       </div>
     </Section>
   );

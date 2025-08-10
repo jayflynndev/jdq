@@ -1,55 +1,79 @@
 "use client";
 
 import { useState } from "react";
-import { sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "@/app/firebase/config";
+import { supabase } from "@/supabaseClient";
+import Link from "next/link";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    try {
-      await sendPasswordResetEmail(auth, email);
-      setSuccess(true);
-    } catch (err: unknown) {
-      console.error(err);
-      setError("Failed to send reset link. Please check the email address.");
+    setError(null);
+    setSuccess(null);
+    setLoading(true);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo:
+        typeof window !== "undefined"
+          ? `${window.location.origin}/reset-password`
+          : undefined,
+    });
+    if (error) {
+      setError(error.message);
+    } else {
+      setSuccess(
+        "If this email exists, a password reset link has been sent. Please check your inbox (and spam folder)."
+      );
     }
+    setLoading(false);
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 bg-white p-6 rounded shadow">
-      <h1 className="text-2xl font-bold mb-4">Forgot Password</h1>
-      {success ? (
-        <p className="text-green-600">
-          ✅ Reset email sent! Check your inbox for further instructions.
-        </p>
-      ) : (
-        <form onSubmit={handleSubmit}>
-          <label className="block mb-2 font-semibold text-gray-700">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+      <h1 className="text-4xl font-bold mb-4">Forgot Password</h1>
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-md p-8 bg-white rounded shadow-md"
+      >
+        {error && <p className="text-red-500 mb-4">{error}</p>}
+        {success && <p className="text-green-600 mb-4">{success}</p>}
+
+        <div className="mb-4">
+          <label
+            className="block text-gray-700 text-sm font-bold mb-2"
+            htmlFor="email"
+          >
             Enter your email address
           </label>
           <input
             type="email"
-            className="border p-2 w-full mb-4"
-            placeholder="you@example.com"
+            id="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-3 py-2 border rounded"
             required
+            autoComplete="email"
           />
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-          >
-            Send Reset Link
-          </button>
-          {error && <p className="text-red-500 mt-3">{error}</p>}
-        </form>
-      )}
+        </div>
+
+        <button
+          type="submit"
+          className="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-700"
+          disabled={loading}
+        >
+          {loading ? "Sending..." : "Send Reset Link"}
+        </button>
+
+        <p className="mt-4 text-gray-700 text-center">
+          <Link href="/auth" className="text-blue-500 hover:underline">
+            Back to login
+          </Link>
+        </p>
+      </form>
     </div>
   );
 }

@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { db } from "@/app/firebase/config";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { supabase } from "@/supabaseClient";
 import Link from "next/link";
 import HomeHero from "@/components/Hero";
 import Section from "@/components/Section";
@@ -10,9 +9,9 @@ import Image from "next/image";
 
 interface Quiz {
   id: string;
-  quizDay: string;
-  quizDate: string;
-  thumbnailUrl?: string;
+  quiz_day: string;
+  quiz_date: string;
+  thumbnail_url?: string;
 }
 
 export default function QuizRecapPage() {
@@ -22,24 +21,18 @@ export default function QuizRecapPage() {
   useEffect(() => {
     const fetchQuizzes = async () => {
       try {
-        const q = query(
-          collection(db, "quizzes"),
-          orderBy("createdAt", "desc")
-        );
-        const snapshot = await getDocs(q);
-        const fetched = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Quiz[];
-
-        setQuizzes(fetched);
+        const { data, error } = await supabase
+          .from("quizzes")
+          .select("*")
+          .order("quiz_date", { ascending: false });
+        if (error) throw error;
+        setQuizzes(data || []);
       } catch (err) {
         console.error("Failed to fetch quizzes:", err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchQuizzes();
   }, []);
 
@@ -91,16 +84,17 @@ export default function QuizRecapPage() {
                     {/* 16:9 container */}
                     <div className="aspect-w-16 aspect-h-9">
                       <Image
-                        src={currentQuiz.thumbnailUrl!}
-                        alt={`${currentQuiz.quizDay} thumbnail`}
+                        src={
+                          currentQuiz.thumbnail_url ||
+                          "/images/quiz-default.jpg" // Fallback
+                        }
+                        alt={`${currentQuiz.quiz_day} thumbnail`}
                         fill
                         style={{ objectFit: "cover" }}
-                        objectFit="cover"
                         className="brightness-75"
                         priority={false}
                       />
                     </div>
-                    {/* overlay text */}
                   </div>
                 </Link>
               </>
@@ -116,7 +110,7 @@ export default function QuizRecapPage() {
                   {previousQuizzes.map((quiz) => (
                     <Link href={`/quiz-recap/${quiz.id}`} key={quiz.id}>
                       <div className="bg-primary-600 text-white p-4 rounded-lg shadow-md hover:bg-primary-500 transition">
-                        {quiz.quizDay} – {formatDate(quiz.quizDate)}
+                        {quiz.quiz_day} – {formatDate(quiz.quiz_date)}
                       </div>
                     </Link>
                   ))}

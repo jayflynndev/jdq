@@ -3,9 +3,10 @@ import { useEffect, useState } from "react";
 import { fetchScoresByType } from "@/utils/fetchScoresByType";
 
 interface Score {
+  user_id: string;
   username: string;
-  score: number;
-  tiebreaker: number;
+  score: number | null;
+  tiebreaker: number | null;
   quizDate: string;
 }
 
@@ -17,7 +18,7 @@ export default function DailyLeaderboard({
   searchedUsername?: string;
 }) {
   const [selectedDate, setSelectedDate] = useState(
-    () => new Date().toISOString().split("T")[0]
+    () => new Date().toISOString().split("T")[0] // 'YYYY-MM-DD'
   );
   const [scores, setScores] = useState<Score[]>([]);
   const [showFull, setShowFull] = useState(false);
@@ -26,27 +27,40 @@ export default function DailyLeaderboard({
 
   useEffect(() => {
     const fetchData = async () => {
-      const allScores = await fetchScoresByType(quizType);
-      const dailyScores = allScores.filter((s) => s.quizDate === selectedDate);
+      // 👉 fetch only this date from the DB
+      const rows = await fetchScoresByType(quizType, { date: selectedDate });
 
-      const sorted = dailyScores.sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        return a.tiebreaker - b.tiebreaker; // lower tiebreaker wins
+      // 👉 sort with null-safe tiebreaker (assume null is worst / big number)
+      const sorted = [...rows].sort((a, b) => {
+        const as = a.score ?? -Infinity;
+        const bs = b.score ?? -Infinity;
+        if (bs !== as) return bs - as;
+        const at = a.tiebreaker ?? Number.POSITIVE_INFINITY;
+        const bt = b.tiebreaker ?? Number.POSITIVE_INFINITY;
+        return at - bt; // lower tiebreaker wins
       });
 
-      setScores(sorted);
+      // 👉 dedupe: keep only the best entry per user_id for the day
+      const seen = new Set<string>();
+      const uniqueBest: Score[] = [];
+      for (const r of sorted) {
+        if (!seen.has(r.user_id)) {
+          seen.add(r.user_id);
+          uniqueBest.push(r);
+        }
+      }
+
+      setScores(uniqueBest);
 
       if (searchedUsername) {
-        const index = sorted.findIndex(
-          (s) => s.username.toLowerCase() === searchedUsername.toLowerCase()
+        const idx = uniqueBest.findIndex(
+          (s) => s.username?.toLowerCase() === searchedUsername.toLowerCase()
         );
-        if (index !== -1) {
-          setUserIndex(index);
-          setUserScore(sorted[index]);
-        } else {
-          setUserIndex(null);
-          setUserScore(null);
-        }
+        setUserIndex(idx !== -1 ? idx : null);
+        setUserScore(idx !== -1 ? uniqueBest[idx] : null);
+      } else {
+        setUserIndex(null);
+        setUserScore(null);
       }
     };
     fetchData();
@@ -86,8 +100,8 @@ export default function DailyLeaderboard({
             </p>
           )}
           <p>
-            <strong>#{userIndex! + 1}</strong> – {userScore.username} –{" "}
-            {userScore.score} pts (Tiebreak: {userScore.tiebreaker})
+            <strong>#{(userIndex ?? 0) + 1}</strong> – {userScore.username} –{" "}
+            {userScore.score} pts (Tiebreak: {userScore.tiebreaker ?? "—"})
           </p>
         </div>
       )}
@@ -106,10 +120,11 @@ export default function DailyLeaderboard({
           <tbody>
             {(showFull ? scores : scores.slice(0, 10)).map((user, index) => (
               <tr
-                key={index}
+                key={user.user_id} // better key than index
                 className={`border-t border-gray-300 text-center ${
                   searchedUsername &&
-                  user.username.toLowerCase() === searchedUsername.toLowerCase()
+                  user.username?.toLowerCase() ===
+                    searchedUsername.toLowerCase()
                     ? "bg-green-100 font-bold"
                     : ""
                 }`}
@@ -117,7 +132,7 @@ export default function DailyLeaderboard({
                 <td className="py-2 px-4 font-bold">#{index + 1}</td>
                 <td className="py-2 px-4">{user.username}</td>
                 <td className="py-2 px-4">{user.score}</td>
-                <td className="py-2 px-4">{user.tiebreaker}</td>
+                <td className="py-2 px-4">{user.tiebreaker ?? "—"}</td>
               </tr>
             ))}
           </tbody>

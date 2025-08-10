@@ -1,16 +1,59 @@
 "use client";
 import { useEffect, useState } from "react";
-import { auth } from "@/app/firebase/config";
-import { onAuthStateChanged } from "firebase/auth";
-import { fetchUsername } from "@/utils/fetchUsername";
-import { fetchScores } from "@/utils/fetchScores";
-import { calculateAverages } from "@/utils/calculateAverages";
-
+import { supabase } from "@/supabaseClient";
 import UserScoreTable from "@/components/UserScoreTable";
 import Link from "next/link";
+import { getWeekNumber } from "@/utils/dateUtils"; // We'll show you how if you need this utility
 
 interface Props {
   onBack: () => void;
+}
+
+interface Score {
+  id: string;
+  uid: string;
+  quiz_date: string;
+  score: number;
+  quiz_type: string;
+}
+
+function calculateAverages(scores: Score[]) {
+  if (!scores.length) {
+    return {
+      weeklyAverage: 0,
+      monthlyAverage: 0,
+      allTimeAverage: 0,
+    };
+  }
+  const today = new Date();
+  const thisWeek = getWeekNumber(today);
+  const thisMonth = today.getMonth() + 1;
+  const thisYear = today.getFullYear();
+
+  let weeklyScores = 0,
+    weeklyCount = 0,
+    monthlyScores = 0,
+    monthlyCount = 0,
+    allTimeScores = 0;
+
+  scores.forEach((s) => {
+    const date = new Date(s.quiz_date);
+    if (getWeekNumber(date) === thisWeek && date.getFullYear() === thisYear) {
+      weeklyScores += s.score;
+      weeklyCount++;
+    }
+    if (date.getMonth() + 1 === thisMonth && date.getFullYear() === thisYear) {
+      monthlyScores += s.score;
+      monthlyCount++;
+    }
+    allTimeScores += s.score;
+  });
+
+  return {
+    weeklyAverage: weeklyCount ? weeklyScores / weeklyCount : 0,
+    monthlyAverage: monthlyCount ? monthlyScores / monthlyCount : 0,
+    allTimeAverage: scores.length ? allTimeScores / scores.length : 0,
+  };
 }
 
 export default function JdqScoreSummary({ onBack }: Props) {
@@ -18,25 +61,38 @@ export default function JdqScoreSummary({ onBack }: Props) {
   const [monthlyAverage, setMonthlyAverage] = useState(0);
   const [allTimeAverage, setAllTimeAverage] = useState(0);
   const [username, setUsername] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const username = await fetchUsername(user.uid);
-        setUsername(username);
+    const fetchData = async () => {
+      // Get logged in user
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
 
-        const scores = await fetchScores(user.uid, "JDQ");
+      // Get username from profiles table
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .single();
+      setUsername(profile?.username || "");
 
-        const averages = calculateAverages(scores);
-        setWeeklyAverage(averages.weeklyAverage);
-        setMonthlyAverage(averages.monthlyAverage);
-        setAllTimeAverage(averages.allTimeAverage);
+      // Get all JDQ scores for user
+      const { data: scores } = await supabase
+        .from("scores")
+        .select("id, uid, quiz_date, score, quiz_type")
+        .eq("uid", user.id)
+        .eq("quiz_type", "JDQ");
 
-        //
-      }
-    });
-
-    return () => unsubscribe();
+      const avgs = calculateAverages(scores || []);
+      setWeeklyAverage(avgs.weeklyAverage);
+      setMonthlyAverage(avgs.monthlyAverage);
+      setAllTimeAverage(avgs.allTimeAverage);
+      setLoading(false);
+    };
+    fetchData();
   }, []);
 
   return (
@@ -55,13 +111,13 @@ export default function JdqScoreSummary({ onBack }: Props) {
           <tr>
             <td className="py-2 border border-gray-300">Averages</td>
             <td className="py-2 border border-gray-300">
-              {weeklyAverage.toFixed(2)}
+              {loading ? "-" : weeklyAverage.toFixed(2)}
             </td>
             <td className="py-2 border border-gray-300">
-              {monthlyAverage.toFixed(2)}
+              {loading ? "-" : monthlyAverage.toFixed(2)}
             </td>
             <td className="py-2 border border-gray-300">
-              {allTimeAverage.toFixed(2)}
+              {loading ? "-" : allTimeAverage.toFixed(2)}
             </td>
           </tr>
           <tr>
@@ -70,14 +126,16 @@ export default function JdqScoreSummary({ onBack }: Props) {
               className="border border-gray-300 bg-slate-300 text-center font-semibold py-4"
             >
               To see your position against others, head to the leaderboard page
-              ➡️ {""}
-              <Link href="/lb-select/jdqlb">here.</Link> ⬅️
+              ➡️{" "}
+              <Link href="/lb-select/jdqlb" className="underline text-blue-600">
+                here.
+              </Link>{" "}
+              ⬅️
             </td>
           </tr>
         </tbody>
       </table>
       <UserScoreTable quizType="JDQ" />
-
       <button
         onClick={onBack}
         className="mt-4 bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded hover:bg-gray-400"

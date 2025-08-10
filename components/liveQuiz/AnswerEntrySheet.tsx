@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { db } from "@/app/firebase/config";
-import { doc, setDoc } from "firebase/firestore";
+import { supabase } from "@/lib/supabaseClient"; // path as per your project
 
 type AnswerEntrySheetProps = {
   quizId: string;
@@ -166,30 +165,34 @@ export const AnswerEntrySheet: React.FC<AnswerEntrySheetProps> = ({
       if (!hasSubmittedRef.current) {
         hasSubmittedRef.current = true;
 
-        // Random sheet number between 1-10
+        // SheetNumber logic is for swapping/peer marking — for now, store as a random 1-10 for demo
         const sheetNumber = Math.floor(Math.random() * 10) + 1;
 
-        setDoc(
-          doc(
-            db,
-            "liveAnswers",
-            `${quizId}_${pubId}_${userId}_part${currentPart}`
-          ),
-          {
-            quizId,
-            pubId,
-            userId,
-            username,
-            currentPart,
-            answers: allAnswers,
-            rounds: partRounds,
-            submittedAt: new Date().toISOString(),
-            sheetNumber, // for swapping
+        (async () => {
+          // Upsert the user's answers for this part (one row for all rounds for MVP)
+          const { error } = await supabase.from("livequiz_answers").upsert([
+            {
+              livequiz_id: quizId,
+              livepub_id: pubId,
+              user_id: userId,
+              username,
+              current_part: currentPart,
+              answers_json: allAnswers,
+              rounds_json: partRounds,
+              submitted_at: new Date().toISOString(),
+              sheet_number: sheetNumber,
+              is_locked: true,
+            },
+          ]);
+
+          if (!error) {
+            setSubmitted(true);
+            // Optionally clear localStorage for this part
+            // localStorage.removeItem(getStorageKey(quizId, pubId, userId, currentPart));
+          } else {
+            alert("Error submitting answers: " + error.message);
           }
-        ).then(() => {
-          setSubmitted(true);
-          // You can optionally clear localStorage here for this part if you want!
-        });
+        })();
       }
     }
     if (!locked) {

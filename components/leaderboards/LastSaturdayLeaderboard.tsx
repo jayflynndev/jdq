@@ -5,8 +5,8 @@ import { fetchScoresByType } from "@/utils/fetchScoresByType";
 
 interface Score {
   username: string;
-  score: number;
-  tiebreaker: number;
+  score: number | null;
+  tiebreaker: number | null;
   quizDate: string;
 }
 
@@ -53,7 +53,10 @@ export default function LastSaturdayLeaderboard({
         const allScores = await fetchScoresByType("JVQ");
         const filtered = allScores.filter((s) => s.quizDate === dateStr);
         const sorted = filtered.sort((a, b) => {
+          if (!a || !b) return 0;
+          if (a.score == null || b.score == null) return 0;
           if (b.score !== a.score) return b.score - a.score;
+          if (a.tiebreaker == null || b.tiebreaker == null) return 0;
           return a.tiebreaker - b.tiebreaker;
         });
         setScores(sorted);

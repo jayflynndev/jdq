@@ -5,8 +5,8 @@ import { fetchScoresByType } from "@/utils/fetchScoresByType";
 
 interface Score {
   username: string;
-  score: number;
-  tiebreaker: number;
+  score: number | null;
+  tiebreaker: number | null;
   quizDate: string;
 }
 
@@ -49,8 +49,11 @@ export default function CombinedJVQLeaderboard({
       const agg: AggregatedScore[] = Object.entries(byUser)
         .map(([username, scores]) => {
           const count = scores.length;
-          const totalScore = scores.reduce((sum, s) => sum + s.score, 0);
-          const totalTb = scores.reduce((sum, s) => sum + s.tiebreaker, 0);
+          const totalScore = scores.reduce((sum, s) => sum + (s.score ?? 0), 0);
+          const totalTb = scores.reduce(
+            (sum, s) => sum + (s.tiebreaker ?? 0),
+            0
+          );
           return {
             username,
             averageScore: totalScore / count,

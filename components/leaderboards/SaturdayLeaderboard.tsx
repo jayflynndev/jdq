@@ -41,7 +41,12 @@ export default function SaturdayLeaderboard({
         if (!scoresByUser[s.username]) {
           scoresByUser[s.username] = [];
         }
-        scoresByUser[s.username].push(s);
+        // Convert nulls to 0 for score and tiebreaker to match Score type
+        scoresByUser[s.username].push({
+          ...s,
+          score: s.score ?? 0,
+          tiebreaker: s.tiebreaker ?? 0,
+        });
       });
 
       const aggregatedData: AggregatedScore[] = Object.entries(

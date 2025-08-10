@@ -1,50 +1,34 @@
 "use client";
 import { useEffect, useState } from "react";
-import { db } from "@/app/firebase/config";
-import { collection, getDocs } from "firebase/firestore";
+import { supabase } from "@/lib/supabaseClient";
 import { FaPlus } from "react-icons/fa";
-import Link from "next/link";
 import CreateQuizForm from "./CreateQuizForm";
+import Link from "next/link";
 
-interface LiveQuiz {
+type Quiz = {
   id: string;
   title: string;
-  startTime: string;
+  start_time: string | null;
   status: string;
-  livestreamUrl: string;
-}
+  livestream_url: string;
+};
 
 export default function ManageQuizzes() {
   const [showForm, setShowForm] = useState(false);
-  const [quizzes, setQuizzes] = useState<LiveQuiz[]>([]);
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Fetch all quizzes
   useEffect(() => {
     const fetchQuizzes = async () => {
       setLoading(true);
-      try {
-        const snap = await getDocs(collection(db, "liveQuizzes"));
-        let fetched = snap.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as LiveQuiz[];
-        // If database is empty, use dummy quiz
-        if (fetched.length === 0) {
-          fetched = [
-            {
-              id: "dummy1",
-              title: "Sample Pub Quiz Night",
-              startTime: new Date().toISOString(),
-              status: "waiting",
-              livestreamUrl: "https://youtube.com/watch?v=xxxxxxx",
-            },
-          ];
-        }
-        setQuizzes(fetched);
-      } finally {
-        setLoading(false);
-      }
+      const { data } = await supabase
+        .from("livequizzes")
+        .select("*")
+        .order("start_time", { ascending: false });
+      setQuizzes(data || []);
+      setLoading(false);
     };
     fetchQuizzes();
   }, [refreshKey]);
@@ -66,7 +50,7 @@ export default function ManageQuizzes() {
         <CreateQuizForm
           onCreated={() => {
             setShowForm(false);
-            setRefreshKey((k) => k + 1); // trigger quiz list reload
+            setRefreshKey((k) => k + 1);
           }}
           onClose={() => setShowForm(false)}
         />
@@ -88,8 +72,8 @@ export default function ManageQuizzes() {
                   {quiz.title}
                 </div>
                 <div className="text-sm text-gray-500 mb-1">
-                  {quiz.startTime
-                    ? new Date(quiz.startTime).toLocaleString()
+                  {quiz.start_time
+                    ? new Date(quiz.start_time).toLocaleString()
                     : ""}
                 </div>
                 <div className="text-xs text-gray-400">
@@ -97,24 +81,12 @@ export default function ManageQuizzes() {
                 </div>
               </div>
               <div className="flex gap-2 mt-2 md:mt-0">
-                {/* Add edit/delete/control buttons here if you want */}
                 <Link href={`/admin/live-quiz/${quiz.id}`}>
                   <button className="px-3 py-1 rounded bg-blue-500 text-white hover:bg-blue-700 text-sm font-bold">
                     Open Dashboard
                   </button>
                 </Link>
-                <button
-                  className="px-3 py-1 rounded bg-purple-200 text-purple-800 text-sm hover:bg-purple-300"
-                  disabled
-                >
-                  Edit
-                </button>
-                <button
-                  className="px-3 py-1 rounded bg-red-100 text-red-700 text-sm hover:bg-red-200"
-                  disabled
-                >
-                  Delete
-                </button>
+                {/* You can add edit/delete if needed */}
               </div>
             </div>
           ))}

@@ -1,22 +1,14 @@
+"use client";
 import { useEffect, useState } from "react";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  deleteDoc,
-  doc,
-} from "firebase/firestore";
-import { db, auth } from "@/app/firebase/config";
-import { onAuthStateChanged } from "firebase/auth";
+import { supabase } from "@/supabaseClient";
 
 interface ContactReply {
   id: string;
   message: string;
-  adminReply: string;
-  created?: import("firebase/firestore").Timestamp;
-  replyTimestamp?: import("firebase/firestore").Timestamp;
-  userRead?: boolean;
+  admin_reply: string;
+  created_at?: string;
+  reply_timestamp?: string;
+  user_read?: boolean;
 }
 
 export function ContactReplies() {
@@ -24,28 +16,28 @@ export function ContactReplies() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  // Load the user's replies
+  // Load replies from Supabase
   useEffect(() => {
-    const fetchReplies = async (uid: string) => {
-      const q = query(
-        collection(db, "contactMessages"),
-        where("uid", "==", uid),
-        where("adminReply", "!=", null)
-      );
-      const snapshot = await getDocs(q);
-      const items = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as ContactReply[];
-      setReplies(items);
+    const fetchReplies = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("contact_messages")
+        .select("id, message, admin_reply, created_at, reply_timestamp")
+        .eq("uid", user.id)
+        .not("admin_reply", "is", null)
+        .order("created_at", { ascending: false });
+      if (!error && data) {
+        setReplies(data as ContactReply[]);
+      }
       setLoading(false);
     };
-
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) fetchReplies(user.uid);
-      else setLoading(false);
-    });
-    return () => unsubscribe && unsubscribe();
+    fetchReplies();
   }, []);
 
   // Handle deleting a message
@@ -54,10 +46,12 @@ export function ContactReplies() {
       return;
     setDeleting(id);
     try {
-      await deleteDoc(doc(db, "contactMessages", id));
-      setReplies((prev) => prev.filter((r) => r.id !== id));
-    } catch {
-      alert("Failed to delete message. Please try again.");
+      const { error } = await supabase
+        .from("contact_messages")
+        .delete()
+        .eq("id", id);
+      if (!error) setReplies((prev) => prev.filter((r) => r.id !== id));
+      else alert("Failed to delete message. Please try again.");
     } finally {
       setDeleting(null);
     }
@@ -68,9 +62,7 @@ export function ContactReplies() {
       <div className="text-center text-gray-500 my-8">Loading messages…</div>
     );
   }
-  if (replies.length === 0) {
-    return null;
-  }
+  if (replies.length === 0) return null;
 
   return (
     <div className="mt-8">
@@ -85,18 +77,15 @@ export function ContactReplies() {
               <div className="ml-2 text-gray-700">{r.message}</div>
               <div className="text-xs text-gray-500 mt-1">
                 Sent:{" "}
-                {r.created?.seconds
-                  ? new Date(r.created.seconds * 1000).toLocaleString()
-                  : ""}
+                {r.created_at ? new Date(r.created_at).toLocaleString() : ""}
               </div>
             </div>
             <div className="mt-2 border-t pt-2">
               <span className="font-semibold text-purple-900">Reply:</span>
-              <div className="ml-2 text-purple-900">{r.adminReply}</div>
+              <div className="ml-2 text-purple-900">{r.admin_reply}</div>
               <div className="text-xs text-gray-500 mt-1">
-                {r.replyTimestamp?.seconds
-                  ? "Replied: " +
-                    new Date(r.replyTimestamp.seconds * 1000).toLocaleString()
+                {r.reply_timestamp
+                  ? "Replied: " + new Date(r.reply_timestamp).toLocaleString()
                   : ""}
               </div>
             </div>

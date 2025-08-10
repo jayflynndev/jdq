@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Quicksand } from "next/font/google";
 import "./globals.css";
-// import NavBar from "@/components/NavBar";
+import NavBar from "@/components/NavBar";
 import Footer from "@/components/Footer";
+import { Toaster } from "react-hot-toast";
 
 const quicksand = Quicksand({
   subsets: ["latin"],
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
   title: "Jay's Quiz Hub",
   description: "JDQ and JVQ's New Home",
 };
-
+console.log("RootLayout rendered");
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -25,8 +26,10 @@ export default function RootLayout({
         <meta name="google-adsense-account" content="ca-pub-1521571031670829" />
       </head>
       <body>
-        {/* <NavBar /> */}
+        <Toaster position="top-center" />
+        <NavBar />
         {children}
+
         <Footer />
       </body>
     </html>

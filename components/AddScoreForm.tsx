@@ -1,8 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
-import { auth, db } from "@/app/firebase/config";
+import { useEffect, useState } from "react";
+import { supabase } from "@/supabaseClient";
+import toast from "react-hot-toast";
 
 interface AddScoreFormProps {
   onScoreSubmitted: () => void;
@@ -16,53 +15,66 @@ export default function AddScoreForm({ onScoreSubmitted }: AddScoreFormProps) {
   const [tiebreaker, setTiebreaker] = useState("");
   const [username, setUsername] = useState("");
   const [quizType, setQuizType] = useState("JDQ");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
 
+  // Load user and username on mount
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        const fetchUsername = async () => {
-          try {
-            const userDoc = await getDoc(doc(db, "users", user.uid));
-            if (userDoc.exists()) {
-              setUsername(userDoc.data().username);
-            }
-          } catch (error) {
-            console.error("Error fetching username:", error);
-            setError("Failed to fetch username. Please try again.");
-          }
-        };
-        fetchUsername();
+    const fetchProfile = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("Not logged in.");
+        return;
       }
-    });
-    return () => unsubscribe();
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .single();
+      setUsername(profile?.username || "");
+    };
+    fetchProfile();
   }, []);
 
+  // Main handler
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
-    const user = auth.currentUser;
+    setLoading(true);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
-      setError("User not authenticated");
+      toast.error("User not authenticated.");
+      setLoading(false);
       return;
     }
 
-    const docRef = doc(db, "scores", `${user.uid}_${quizDate}_${quizType}`);
-    const existing = await getDoc(docRef);
+    // Check if already submitted for this date/type
+    const { data: existing, error: checkError } = await supabase
+      .from("scores")
+      .select("id")
+      .eq("uid", user.id)
+      .eq("quiz_date", quizDate)
+      .eq("quiz_type", quizType)
+      .maybeSingle();
 
-    if (existing.exists()) {
-      setError("You've already submitted a score for this date and quiz.");
+    if (existing) {
+      toast.error("You've already submitted a score for this date and quiz.");
+      setLoading(false);
+      return;
+    }
+    if (checkError && checkError.code !== "PGRST116") {
+      toast.error("Could not check for duplicate: " + checkError.message);
+      setLoading(false);
       return;
     }
 
-    // Detect weekday name
+    // Weekday logic
     const dayOfWeek = new Date(quizDate).toLocaleDateString("en-GB", {
       weekday: "long",
     });
-
-    // Determine JVQ dayType
     const isJVQ = quizType === "JVQ";
     const dayType =
       isJVQ && (dayOfWeek === "Thursday" || dayOfWeek === "Saturday")
@@ -70,38 +82,46 @@ export default function AddScoreForm({ onScoreSubmitted }: AddScoreFormProps) {
         : null;
 
     if (isJVQ && !dayType) {
-      setError("JVQ scores can only be submitted for Thursday or Saturday.");
+      toast.error("JVQ scores can only be submitted for Thursday or Saturday.");
+      setLoading(false);
       return;
     }
-
-    // Extra check for JVQ: Only allow after 8:30 PM on quiz day
+    // Only allow after 8:30 PM on quiz day (JVQ)
     if (isJVQ && quizDate === new Date().toISOString().split("T")[0]) {
       const now = new Date();
       const currentTime = now.getHours() + now.getMinutes() / 60;
       if (currentTime < 20.5) {
-        setError("You can only submit JVQ scores after 8:30 PM on quiz day.");
+        toast.error(
+          "You can only submit JVQ scores after 8:30 PM on quiz day."
+        );
+        setLoading(false);
         return;
       }
     }
 
+    // Save to Supabase
     try {
-      await setDoc(docRef, {
-        uid: user.uid,
-        username,
-        quizDate,
-        score: parseInt(score),
-        tiebreaker: parseInt(tiebreaker),
-        quizType,
-        ...(isJVQ && { dayType }), // only add dayType for JVQ
-      });
-
-      setSuccess("Score successfully submitted!");
+      const { error } = await supabase.from("scores").insert([
+        {
+          uid: user.id,
+          username,
+          quiz_date: quizDate,
+          score: parseInt(score),
+          tiebreaker: parseInt(tiebreaker),
+          quiz_type: quizType,
+          ...(isJVQ ? { day_type: dayType } : {}),
+        },
+      ]);
+      if (error) throw error;
+      toast.success("Score successfully submitted!");
       setScore("");
       setTiebreaker("");
-    } catch (err) {
-      console.error("Error adding score:", err);
-      setError("Failed to add score. Please try again.");
+      onScoreSubmitted();
+    } catch (err: any) {
+      toast.error("Failed to add score. " + (err?.message || ""));
+      console.error(err);
     }
+    setLoading(false);
   };
 
   const maxScore = quizType === "JDQ" ? 5 : 50;
@@ -109,11 +129,6 @@ export default function AddScoreForm({ onScoreSubmitted }: AddScoreFormProps) {
   return (
     <div className="w-full max-w-md mx-auto bg-white p-6 rounded shadow-md">
       <h2 className="text-2xl font-bold mb-4 text-center">Add Your Score</h2>
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-      {success && (
-        <p className="text-green-600 font-semibold mb-4">{success}</p>
-      )}
-
       <form onSubmit={handleSubmit}>
         {/* Quiz Date */}
         <div className="mb-4">
@@ -124,7 +139,7 @@ export default function AddScoreForm({ onScoreSubmitted }: AddScoreFormProps) {
             type="date"
             id="quizDate"
             value={quizDate}
-            max={new Date().toISOString().split("T")[0]} // Prevent future dates
+            max={new Date().toISOString().split("T")[0]}
             onChange={(e) => setQuizDate(e.target.value)}
             className="w-full px-3 py-2 border rounded"
             required
@@ -167,7 +182,7 @@ export default function AddScoreForm({ onScoreSubmitted }: AddScoreFormProps) {
         {/* Tiebreaker */}
         <div className="mb-6">
           <label className="block font-semibold mb-1" htmlFor="tiebreaker">
-            Tiebreaker (points you were away)
+            Tiebreaker (difference between your answer and correct answer)
           </label>
           <input
             type="number"
@@ -186,8 +201,9 @@ export default function AddScoreForm({ onScoreSubmitted }: AddScoreFormProps) {
           <button
             type="submit"
             className="flex-1 bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-600"
+            disabled={loading}
           >
-            Submit
+            {loading ? "Submitting..." : "Submit"}
           </button>
           <button
             type="button"

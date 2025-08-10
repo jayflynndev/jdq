@@ -41,7 +41,12 @@ export default function ThursdayLeaderboard({
         if (!scoresByUser[s.username]) {
           scoresByUser[s.username] = [];
         }
-        scoresByUser[s.username].push(s);
+        // Ensure score and tiebreaker are numbers (not null)
+        scoresByUser[s.username].push({
+          ...s,
+          score: s.score ?? 0,
+          tiebreaker: s.tiebreaker ?? 0,
+        });
       });
 
       const aggregatedData: AggregatedScore[] = Object.entries(

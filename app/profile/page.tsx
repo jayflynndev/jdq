@@ -1,22 +1,19 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/app/firebase/config";
-import { fetchUsername } from "@/utils/fetchUsername";
-import ProfileForm from "@/components/profileForm";
+import { supabase } from "@/supabaseClient";
+import ProfileForm from "@/components/ProfileForm";
 import AddScoreForm from "@/components/AddScoreForm";
 import JdqScoreSummary from "@/components/JdqScoreSummary";
 import JvqScoreSummary from "@/components/JvqScoreSummary";
-import { ContactReplies } from "@/components/ContactReplies";
+import ContactThreads from "@/components/ContactThreads";
 
 export default function Profile() {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState<string | null>(null);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(true);
 
+  // Card view toggles
   const [showAddScoreForm, setShowAddScoreForm] = useState(false);
   const [showJdqScores, setShowJdqScores] = useState(false);
   const [showJvqScores, setShowJvqScores] = useState(false);
@@ -24,23 +21,37 @@ export default function Profile() {
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setEmail(user.email || "");
-        try {
-          const name = await fetchUsername(user.uid);
-          setUsername(name); // This could be null if not set
-        } catch {
-          setUsername(null);
-        }
-      } else {
-        router.push("/sign-in");
+    const fetchProfile = async () => {
+      // Get Supabase user (session)
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        router.push("/auth"); // Not logged in
+        return;
       }
-    });
-    return () => unsubscribe();
+      setEmail(user.email ?? "");
+
+      // Fetch username from "profiles"
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .single();
+
+      setUsername(profile?.username ?? null);
+      setLoading(false);
+    };
+
+    fetchProfile();
   }, [router]);
 
-  // Robust display name logic: username > email prefix > Player
+  // Show a loading spinner if needed
+  if (loading) {
+    return <div className="text-center py-12">Loading profile...</div>;
+  }
+
+  // Display name logic
   const displayName =
     (username && username.trim()) ||
     (email ? email.split("@")[0] : "") ||
@@ -94,30 +105,21 @@ export default function Profile() {
           )}
         </div>
 
-        {/* Right section */}
+        {/* Right section (Profile update) */}
         <div className="bg-white p-4 rounded shadow-md">
           <h2 className="text-2xl font-bold mb-4">Update Profile</h2>
           <h3 className="text-lg font-semibold mb-4">
             Update details if required (leave current password blank to keep it
             unchanged)
           </h3>
-
-          <ProfileForm
-            email={email}
-            username={username || ""}
-            currentPassword={currentPassword}
-            setEmail={setEmail}
-            setUsername={setUsername}
-            setCurrentPassword={setCurrentPassword}
-            setError={setError}
-            setSuccess={setSuccess}
-          />
-
-          {success && <p className="text-green-500 mt-4">{success}</p>}
-          {error && <p className="text-red-500 mt-2">{error}</p>}
+          <ProfileForm />
         </div>
       </div>
-      <ContactReplies />
+
+      {/* Replies */}
+      <div className="mt-10">
+        <ContactThreads />
+      </div>
     </div>
   );
 }

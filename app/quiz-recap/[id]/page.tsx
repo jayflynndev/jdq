@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/app/firebase/config";
+import { supabase } from "@/supabaseClient";
 import Image from "next/image";
-
 import Section from "@/components/Section";
 
 type QuizRound = {
@@ -25,10 +23,11 @@ type QuizPart = {
 
 type Quiz = {
   id: string;
-  quizDay: string;
-  quizDate: string;
-  youtubeUrl?: string;
-  accessCodes?: {
+  quiz_day: string;
+  quiz_date: string;
+  youtube_url?: string;
+  thumbnail_url?: string;
+  access_codes?: {
     part1?: string;
     part2?: string;
   };
@@ -38,7 +37,6 @@ type Quiz = {
   };
 };
 
-// Updated VideoEmbed using padding-bottom hack for 16:9
 function VideoEmbed({ src, sticky }: { src: string; sticky: boolean }) {
   return (
     <div
@@ -51,7 +49,6 @@ function VideoEmbed({ src, sticky }: { src: string; sticky: boolean }) {
         rounded-lg overflow-hidden transition-all duration-300
       `}
     >
-      {/* Use padding-bottom on a wrapper for 16:9 */}
       {!sticky && (
         <div className="w-full relative" style={{ paddingBottom: "56.25%" }}>
           <iframe
@@ -63,7 +60,6 @@ function VideoEmbed({ src, sticky }: { src: string; sticky: boolean }) {
           />
         </div>
       )}
-
       {sticky && (
         <iframe
           className="absolute inset-0 w-full h-full"
@@ -91,17 +87,19 @@ export default function QuizRecapDetailPage() {
   useEffect(() => {
     const fetchQuiz = async () => {
       try {
-        const quizDoc = await getDoc(doc(db, "quizzes", String(id)));
-        if (quizDoc.exists()) {
-          setQuiz({ id: quizDoc.id, ...(quizDoc.data() as Omit<Quiz, "id">) });
-        }
+        const { data, error } = await supabase
+          .from("quizzes")
+          .select("*")
+          .eq("id", String(id))
+          .single();
+        if (error) throw error;
+        setQuiz(data as Quiz);
       } catch (err) {
         console.error("Failed to load quiz:", err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchQuiz();
 
     const handleScroll = () => {
@@ -120,14 +118,14 @@ export default function QuizRecapDetailPage() {
     }
   };
 
-  const videoId = extractVideoId(quiz?.youtubeUrl || "");
+  const videoId = extractVideoId(quiz?.youtube_url || "");
   const embedUrl = videoId
     ? `https://www.youtube.com/embed/${videoId}?autoplay=1`
     : null;
 
   const handleCodeSubmit = () => {
-    if (!quiz?.accessCodes || !selectedPart) return;
-    const validCode = quiz.accessCodes[selectedPart];
+    if (!quiz?.access_codes || !selectedPart) return;
+    const validCode = quiz.access_codes[selectedPart];
     if (codeInput.trim() === validCode) {
       setCodeValid(true);
     } else {
@@ -156,7 +154,7 @@ export default function QuizRecapDetailPage() {
       bgClass="bg-gradient-to-t from-primary-200 to-primary-900"
     >
       <h1 className="text-3xl font-bold text-yellow-400 mb-4">
-        {quiz.quizDay} – {formatDate(quiz.quizDate)}
+        {quiz.quiz_day} – {formatDate(quiz.quiz_date)}
       </h1>
 
       {/* Video Embed */}

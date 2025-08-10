@@ -3,12 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchScoresByType } from "@/utils/fetchScoresByType";
 
-interface Score {
-  username: string;
-  score: number;
-  tiebreaker: number;
-  quizDate: string;
-}
+import type { Score } from "@/utils/fetchScoresByType";
 
 function getMostRecentThursday(): Date {
   const now = new Date();
@@ -53,8 +48,12 @@ export default function LastThursdayLeaderboard({
         const allScores = await fetchScoresByType("JVQ");
         const filtered = allScores.filter((s) => s.quizDate === dateStr);
         const sorted = filtered.sort((a, b) => {
-          if (b.score !== a.score) return b.score - a.score;
-          return a.tiebreaker - b.tiebreaker;
+          const aScore = a.score ?? 0;
+          const bScore = b.score ?? 0;
+          if (bScore !== aScore) return bScore - aScore;
+          const aTiebreaker = a.tiebreaker ?? 0;
+          const bTiebreaker = b.tiebreaker ?? 0;
+          return aTiebreaker - bTiebreaker;
         });
         setScores(sorted);
 

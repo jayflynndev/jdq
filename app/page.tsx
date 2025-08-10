@@ -1,6 +1,8 @@
 // app/page.tsx
-import Section from "@/components/Section";
-import HomeHero from "@/components/Hero";
+import Section from "../components/Section";
+import HomeHero from "../components/Hero";
+import HomeCard from "../components/HomeCard";
+import { FaClipboardList, FaTrophy } from "react-icons/fa";
 
 export default function HomePage() {
   return (
@@ -14,7 +16,7 @@ export default function HomePage() {
         <HomeHero
           heroTitle="Welcome to Jay’s Quiz Hub!"
           heroSubtitle="Quiz Recaps & JDQ Leaderboards"
-          heroDescription="Quiz Hub is currently down for maintanance. Currently I am migrating all of the back end data across to a new database. Quiz Hub will be back up and running on Monday 11th August at 5AM. Usernames/emails and passwords will remain unchanged (You will not need to re-register or change anything). Thank you for your patience!"
+          heroDescription="From quick dailies to the big screen experience—relive Thursday & Saturday’s epic quizzes, view your scores, and climb the leaderboard!"
           heroImage="/images/HeroPH.jpg"
           heightClass="min-h-[600px]"
           overlay
@@ -22,6 +24,27 @@ export default function HomePage() {
       </Section>
 
       {/* Cards Section */}
+      <Section
+        container
+        bgClass="bg-gradient-to-t from-primary-200 to-primary-900" // light neutral background
+        pxClass="px-4"
+        pyClass="py-12"
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <HomeCard
+            title="Quiz Recap"
+            description="Thursday and Saturday Recaps are available here! Use the code from the stream to access!"
+            href="/quiz-recap"
+            icon={<FaClipboardList />}
+          />
+          <HomeCard
+            title="Jay's Quiz Leaderboards"
+            description="Find your place in the Worldwide leader boards of JDQ and NOW JVQ as well! Just remember to add your score you must be registered"
+            href="/lb-select"
+            icon={<FaTrophy />}
+          />
+        </div>
+      </Section>
 
       {/* Ad Banner Section TBC */}
     </>

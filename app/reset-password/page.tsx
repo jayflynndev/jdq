@@ -1,73 +1,104 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { confirmPasswordReset } from "firebase/auth";
-import { auth } from "@/app/firebase/config";
+import { useState } from "react";
+import { supabase } from "@/supabaseClient";
+import Link from "next/link";
 
 export default function ResetPasswordPage() {
-  const [oobCode, setOobCode] = useState<string | null>(null);
-  const [newPassword, setNewPassword] = useState("");
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      setOobCode(params.get("oobCode"));
-    }
-  }, []);
-  useEffect(() => {
-    if (success) {
-      const timer = setTimeout(() => {
-        window.location.href = "/sign-in";
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [success]);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    setLoading(true);
 
-  const handleReset = async () => {
-    if (!oobCode) {
-      setError("Missing or invalid reset code.");
+    if (password !== confirm) {
+      setError("Passwords do not match.");
+      setLoading(false);
       return;
     }
 
-    try {
-      await confirmPasswordReset(auth, oobCode, newPassword);
-      setSuccess(true);
-    } catch (err) {
-      console.error(err);
-      setError("Password reset failed. The link may be expired or invalid.");
+    // Supabase handles the session from the reset link (if user arrived from the email)
+    const { error } = await supabase.auth.updateUser({
+      password,
+    });
+    if (error) {
+      setError(error.message);
+    } else {
+      setSuccess(
+        "Your password has been reset. You can now log in with your new password."
+      );
+      setPassword("");
+      setConfirm("");
     }
+    setLoading(false);
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 bg-white p-6 rounded shadow">
-      <h1 className="text-2xl font-bold mb-4">Reset Your Password</h1>
-      {success ? (
-        <>
-          <p className="text-green-600 mb-4">
-            ✅ Your password has been reset successfully.
-          </p>
-          <p className="text-gray-700">Redirecting to sign-in page...</p>
-        </>
-      ) : (
-        <>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+      <h1 className="text-4xl font-bold mb-4">Reset Password</h1>
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-md p-8 bg-white rounded shadow-md"
+      >
+        {error && <p className="text-red-500 mb-4">{error}</p>}
+        {success && <p className="text-green-600 mb-4">{success}</p>}
+
+        <div className="mb-4">
+          <label
+            className="block text-gray-700 text-sm font-bold mb-2"
+            htmlFor="password"
+          >
+            New Password
+          </label>
           <input
             type="password"
-            className="border p-2 w-full mb-4"
-            placeholder="Enter new password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
+            id="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-3 py-2 border rounded"
+            required
+            autoComplete="new-password"
           />
-          <button
-            onClick={handleReset}
-            className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+        </div>
+
+        <div className="mb-4">
+          <label
+            className="block text-gray-700 text-sm font-bold mb-2"
+            htmlFor="confirm"
           >
-            Reset Password
-          </button>
-          {error && <p className="text-red-500 mt-3">{error}</p>}
-        </>
-      )}
+            Confirm New Password
+          </label>
+          <input
+            type="password"
+            id="confirm"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            className="w-full px-3 py-2 border rounded"
+            required
+            autoComplete="new-password"
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="w-full bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-700"
+          disabled={loading}
+        >
+          {loading ? "Resetting..." : "Reset Password"}
+        </button>
+
+        <p className="mt-4 text-gray-700 text-center">
+          <Link href="/auth" className="text-blue-500 hover:underline">
+            Back to login
+          </Link>
+        </p>
+      </form>
     </div>
   );
 }

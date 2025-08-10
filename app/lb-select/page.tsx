@@ -12,7 +12,7 @@ export default function LeaderboardSelectPage() {
     >
       <HomeHero
         heroTitle="JDQ and JVQ Leaderboards!"
-        heroSubtitle="**PLANNED MAINTANANCE** QUIZ HUB WILL BE UNAVAILABLE ON SUNDAY 10th AUGUST FROM MORNING UNTIL MONDAY 11th AUGUST 5AM. SORRY FOR THE INCONVENIENCE!  "
+        heroSubtitle="What is your position on the Leaderboard?"
         heroDescription="Now you can add your score to all the leader boards! Whether you play the JDQ, or the Thursday/Saturday quizzes, you can now share your scores with the world! (Remember, you need to create an account to be able to add your scores!"
         heroImage="/images/HeroPH.jpg"
         heightClass="min-h-[600px]"

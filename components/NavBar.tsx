@@ -2,41 +2,59 @@
 import { useState, useEffect } from "react";
 import { GiPodiumWinner, GiHamburgerMenu } from "react-icons/gi";
 import { MdOutlineClose } from "react-icons/md";
-import { signOut, onAuthStateChanged, User } from "firebase/auth";
-import { auth } from "@/app/firebase/config";
+import { supabase } from "@/supabaseClient";
 import MenuItems from "./MenuItems";
 
 export default function NavBar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      console.log("Auth state changed:", user);
-      setUser(user);
+    let ignore = false;
+
+    // Helper to fetch admin status
+    const fetchAdmin = async (uid: string) => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", uid)
+        .single();
+      if (!ignore) setIsAdmin(!!data?.is_admin);
+    };
+
+    // Initial fetch
+    supabase.auth.getUser().then(({ data }) => {
+      if (!ignore) setUser(data?.user || null);
+      if (data?.user) fetchAdmin(data.user.id);
+      else if (!ignore) setIsAdmin(false);
     });
 
-    return () => unsubscribe();
+    // Auth state change
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (!ignore) setUser(session?.user || null);
+        if (session?.user) fetchAdmin(session.user.id);
+        else if (!ignore) setIsAdmin(false);
+      }
+    );
+
+    return () => {
+      ignore = true;
+      listener?.subscription.unsubscribe();
+    };
   }, []);
 
-  const toggleMenu = () => {
-    setIsOpen(!isOpen);
-  };
+  const toggleMenu = () => setIsOpen((v) => !v);
 
   const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      console.log("User signed out");
-      setUser(null); // Ensure the user state is updated
-      setIsOpen(false); // Close the mobile menu
-    } catch (error) {
-      console.error("Error signing out:", error);
-    }
+    await supabase.auth.signOut();
+    setUser(null);
+    setIsAdmin(false);
+    setIsOpen(false);
   };
 
-  const handleMenuItemClick = () => {
-    setIsOpen(false); // Close the mobile menu
-  };
+  const handleMenuItemClick = () => setIsOpen(false);
 
   return (
     <header className="w-full">
@@ -75,7 +93,13 @@ export default function NavBar() {
               href="/quiz-recap"
               onClick={handleMenuItemClick}
             />
-            <MenuItems title="JDQ" href="/jdq" onClick={handleMenuItemClick} />
+            {!isAdmin && (
+              <MenuItems
+                title="JDQ"
+                href="/jdq"
+                onClick={handleMenuItemClick}
+              />
+            )}
             <MenuItems
               title="Leader Boards"
               href="/lb-select"
@@ -83,16 +107,27 @@ export default function NavBar() {
             />
             {user ? (
               <>
-                <MenuItems
-                  title="Add Score & Profile"
-                  href="/profile"
-                  onClick={handleMenuItemClick}
-                />
-                <MenuItems
-                  title="Contact Us"
-                  href="/contact"
-                  onClick={handleMenuItemClick}
-                />
+                {isAdmin && (
+                  <MenuItems
+                    title="Admin"
+                    href="/admin"
+                    onClick={handleMenuItemClick}
+                  />
+                )}
+                {!isAdmin && (
+                  <MenuItems
+                    title="Add Score & Profile"
+                    href="/profile"
+                    onClick={handleMenuItemClick}
+                  />
+                )}
+                {!isAdmin && (
+                  <MenuItems
+                    title="Contact Us"
+                    href="/contact"
+                    onClick={handleMenuItemClick}
+                  />
+                )}
                 <MenuItems
                   title="Sign Out"
                   href="/"
@@ -105,12 +140,13 @@ export default function NavBar() {
             ) : (
               <MenuItems
                 title="Sign In"
-                href="/sign-in"
+                href="/auth"
                 onClick={handleMenuItemClick}
               />
             )}
           </div>
         </div>
+
         {/* Desktop Menu */}
         <div className="hidden lg:flex flex-1 items-center justify-end">
           <MenuItems title="Home" href="/" />
@@ -119,17 +155,20 @@ export default function NavBar() {
             href="/quiz-recap"
             onClick={handleMenuItemClick}
           />
-          <MenuItems title="JDQ" href="jdq" />
+          {!isAdmin && <MenuItems title="JDQ" href="/jdq" />}
           <MenuItems title="Leader Boards" href="/lb-select" />
 
           {user ? (
             <>
-              <MenuItems title="Add Score & Profile" href="/profile" />
-              <MenuItems title="Contact Us!" href="/contact" />
+              {isAdmin && <MenuItems title="Admin" href="/admin" />}
+              {!isAdmin && (
+                <MenuItems title="Add Score & Profile" href="/profile" />
+              )}
+              {!isAdmin && <MenuItems title="Contact Us!" href="/contact" />}
               <MenuItems title="Sign Out" href="/" onClick={handleSignOut} />
             </>
           ) : (
-            <MenuItems title="Sign In" href="/sign-in" />
+            <MenuItems title="Sign In" href="/auth" />
           )}
         </div>
       </nav>

@@ -1,9 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { auth } from "@/app/firebase/config";
+import { supabase } from "@/supabaseClient";
 import {
   FaListOl,
   FaUsers,
@@ -11,27 +10,34 @@ import {
   FaChartBar,
 } from "react-icons/fa";
 
-// Your admin UID:
-const ADMIN_UID = process.env.NEXT_PUBLIC_ADMIN_UID;
-
 export default function AdminDashboard() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Admin Auth Check
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
+    const checkAdmin = async () => {
+      // Get user session
+      const { data } = await supabase.auth.getUser();
+      const user = data?.user;
       if (!user) {
-        router.replace("/sign-in");
-      } else if (user.uid !== ADMIN_UID) {
-        router.replace("/");
-      } else {
+        router.replace("/auth");
+        return;
+      }
+      // Check admin status from profiles table
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .single();
+      if (profile?.is_admin) {
         setIsAdmin(true);
+      } else {
+        router.replace("/"); // Not admin
       }
       setAuthChecked(true);
-    });
-    return () => unsub();
+    };
+    checkAdmin();
   }, [router]);
 
   if (!authChecked || !isAdmin) {
