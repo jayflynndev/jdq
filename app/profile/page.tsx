@@ -2,11 +2,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/supabaseClient";
-import ProfileForm from "@/components/ProfileForm";
 import AddScoreForm from "@/components/AddScoreForm";
 import JdqScoreSummary from "@/components/JdqScoreSummary";
 import JvqScoreSummary from "@/components/JvqScoreSummary";
 import ContactThreads from "@/components/ContactThreads";
+import ProfileForm from "@/components/ProfileForm";
 
 export default function Profile() {
   const [email, setEmail] = useState("");
