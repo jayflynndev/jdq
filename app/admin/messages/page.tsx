@@ -63,7 +63,9 @@ export default function AdminContactThreads() {
 
       // Get usernames for all threads
       if (threadData) {
-        const userIds = Array.from(new Set(threadData.map((t) => t.user_id)));
+        const userIds = Array.from(
+          new Set(threadData.map((t: Thread) => t.user_id))
+        );
         if (userIds.length > 0) {
           const { data: profileRows } = await supabase
             .from("profiles")
