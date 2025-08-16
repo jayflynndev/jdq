@@ -30,7 +30,7 @@ export function JDQCard() {
 export function JVQCard() {
   return (
     <div className="rounded-lg bg-white dark:bg-surface-inverted/60 shadow-card p-6">
-      <h3 className="font-heading text-xl">Jay's Quiz Live!</h3>
+      <h3 className="font-heading text-xl">Jay&apos;s Quiz Live!</h3>
       <p className="text-textc-muted mt-1">
         Live at 8pm • 50 questions • 2 parts
       </p>
