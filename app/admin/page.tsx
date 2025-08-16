@@ -3,12 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/supabaseClient";
-import {
-  FaListOl,
-  FaUsers,
-  FaEnvelopeOpenText,
-  FaChartBar,
-} from "react-icons/fa";
+import { FaListOl, FaEnvelopeOpenText, FaChartBar } from "react-icons/fa";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -56,12 +51,7 @@ export default function AdminDashboard() {
       title: "JVQ Admin",
       desc: "Manage Jay's Virtual Quiz (leaderboards, recaps, edit scores).",
     },
-    {
-      href: "/admin/live-quiz",
-      icon: <FaUsers className="text-purple-600 text-5xl mb-4" />,
-      title: "Live Quiz Admin",
-      desc: "Run live quizzes, create & control rooms, and manage quizzes.",
-    },
+
     {
       href: "/admin/messages",
       icon: <FaEnvelopeOpenText className="text-green-500 text-5xl mb-4" />,

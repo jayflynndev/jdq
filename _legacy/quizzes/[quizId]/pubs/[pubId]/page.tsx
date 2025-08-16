@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { db, auth } from "@/app/firebase/config";
 import { doc, onSnapshot, getDoc, updateDoc, setDoc } from "firebase/firestore";
 import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
-import { PubRoom } from "@/components/liveQuiz/PubRoom";
+import { PubRoom } from "@/_legacy/liveQuiz/PubRoom";
 import { listenForMyMarkingTask } from "@/utils/listenForMyMarkingTask";
 import {
   fetchLiveLeaderboardData,

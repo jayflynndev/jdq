@@ -12,7 +12,7 @@ import {
   getDocs,
   Unsubscribe,
 } from "firebase/firestore";
-import { QuizCard } from "@/components/liveQuiz/QuizCard";
+import { QuizCard } from "@/_legacy/liveQuiz/QuizCard";
 
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useRouter } from "next/navigation";
