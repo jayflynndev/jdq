@@ -8,6 +8,7 @@ export type Score = {
   score: number | null;
   tiebreaker: number | null;
   quizType: string;
+  dayType?: string | null;
 };
 
 type FetchOpts =
@@ -21,7 +22,9 @@ export async function fetchScoresByType(
 ): Promise<Score[]> {
   let q = supabase
     .from("scores")
-    .select("uid, quiz_date, score, tiebreaker, quiz_type, profiles(username)")
+    .select(
+      "uid, quiz_date, score, tiebreaker, quiz_type, day_type, profiles(username)"
+    )
     .eq("quiz_type", quizType); // values are 'JDQ' | 'JVQ'
 
   if (opts && "date" in opts) {
@@ -43,5 +46,6 @@ export async function fetchScoresByType(
     score: row.score,
     tiebreaker: row.tiebreaker,
     quizType: row.quiz_type,
+    dayType: row.day_type ?? null,
   }));
 }

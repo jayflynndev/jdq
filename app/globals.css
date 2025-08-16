@@ -1,5 +1,105 @@
-@import url("https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  /* spacing rhythm helpers (optional) */
+  --rhythm-1: 0.25rem;
+  --rhythm-2: 0.5rem;
+  --rhythm-3: 0.75rem;
+  --rhythm-4: 1rem;
+  --rhythm-6: 1.5rem;
+  --rhythm-8: 2rem;
+
+  /* motion */
+  --ease-out-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+*,
+*::before,
+*::after {
+  @apply antialiased;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-surface-subtle text-textc font-body;
+}
+
+/* Headings use Poppins for a friendly, modern vibe */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  @apply font-heading text-textc;
+}
+
+/* Light theme tokens (default) */
+:root {
+  --bg: 248 250 252; /* slate-50 */
+  --card: 243 244 246; /* gray-100 */
+  --text: 15 23 42; /* slate-900 */
+  --muted: 71 85 105; /* slate-600 */
+}
+
+/* Dark theme */
+.dark {
+  --bg: 17 24 39; /* slate-900 */
+  --card: 30 41 59; /* slate-800 */
+  --text: 248 250 252;
+  --muted: 148 163 184; /* slate-400 */
+}
+
+.bg-app {
+  background-color: rgb(var(--bg));
+}
+.bg-card {
+  background-color: rgb(var(--card));
+}
+.text-app {
+  color: rgb(var(--text));
+}
+.text-muted {
+  color: rgb(var(--muted));
+}
+
+/* Common UI atoms */
+.btn {
+  @apply items-center justify-center rounded-lg px-4 py-2 font-medium transition-transform duration-200 ease-out-soft;
+}
+.btn:hover {
+  transform: translateY(-1px);
+}
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn-brand {
+  @apply bg-brand text-white shadow focus:outline-none;
+}
+.btn-brand:hover {
+  @apply bg-brand-600 shadow-hover;
+}
+.btn-brand:focus {
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.25);
+}
+
+.card {
+  @apply bg-white dark:bg-surface-inverted/50 rounded-lg shadow-card p-6;
+}
+
+.badge {
+  @apply inline-flex items-center rounded-full px-2.5 py-1 text-sm font-medium;
+}
+.badge-accent {
+  @apply bg-accent/15 text-accent;
+}
+.badge-gold {
+  @apply bg-highlight/15 text-highlight;
+}

@@ -1,25 +1,25 @@
+// app/quiz-recap/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/supabaseClient";
 import Link from "next/link";
-import HomeHero from "@/components/Hero";
-import Section from "@/components/Section";
 import Image from "next/image";
+import { supabase } from "@/supabaseClient";
+import { Card, CardContent } from "@/components/ui/Card";
 
-interface Quiz {
+type Quiz = {
   id: string;
   quiz_day: string;
-  quiz_date: string;
+  quiz_date: string; // "YYYY-MM-DD"
   thumbnail_url?: string;
-}
+};
 
 export default function QuizRecapPage() {
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchQuizzes = async () => {
+    (async () => {
       try {
         const { data, error } = await supabase
           .from("quizzes")
@@ -27,99 +27,106 @@ export default function QuizRecapPage() {
           .order("quiz_date", { ascending: false });
         if (error) throw error;
         setQuizzes(data || []);
-      } catch (err) {
-        console.error("Failed to fetch quizzes:", err);
+      } catch (e) {
+        console.error("Failed to fetch quizzes:", e);
       } finally {
         setLoading(false);
       }
-    };
-    fetchQuizzes();
+    })();
   }, []);
 
   const currentQuiz = quizzes[0];
   const previousQuizzes = quizzes.slice(1, 7);
 
-  const formatDate = (dateString: string) => {
-    const [year, month, day] = dateString.split("-");
-    return `${day}/${month}/${year}`;
+  const formatDate = (iso: string) => {
+    const [y, m, d] = iso.split("-");
+    return `${d}/${m}/${y}`;
   };
 
   return (
-    <>
-      <Section
-        bgClass="relative bg-gradient-to-t from-primary-900 to-primary-200"
-        pxClass="px-0"
-        pyClass="py-0"
-      >
-        <HomeHero
-          heroTitle="JVQ Recaps"
-          heroSubtitle="Whether Thursday or Saturday, you can find those questions and Pictures here!"
-          heroDescription="If playing live or premiere on the night in question, it will be the current quiz you need to select. If you are playing on catch-up, check the dates in the Previous Quizes"
-          heroImage="/images/HeroPH.jpg"
-          heightClass="min-h-[600px]"
-          overlay={true}
-        />
-      </Section>
+    <main className="min-h-screen bg-gradient-to-b from-purple-50 via-purple-100 to-purple-900">
+      <div className="mx-auto max-w-7xl px-4 py-10">
+        {/* Top section: text (left) + thumbnail (right) on desktop */}
+        <section className="grid grid-cols-1 items-start gap-8 md:grid-cols-2">
+          {/* Text block */}
+          <div>
+            <h1 className="font-heading text-3xl text-black font-bold">
+              JVQ Recaps
+            </h1>
+            <p className="mt-2 max-w-prose text-black/85">
+              Whether Thursday or Saturday, you can find those questions and
+              pictures here. If you’re playing live or premiere on the night,
+              open the current quiz. Catching up later? Pick from the previous
+              quizzes below.
+            </p>
+          </div>
 
-      <Section
-        container
-        bgClass="relative bg-gradient-to-t from-primary-200 to-primary-900"
-      >
-        {loading ? (
-          <p className="text-primary-700">Loading quizzes…</p>
-        ) : (
-          <>
-            {/* Current Quiz */}
-            {currentQuiz && (
-              <>
-                <h1 className="text-h2 text-primary-200 text-xl font-bold mb-4">
-                  Current Quiz 📌
-                </h1>
-                <Link
-                  href={`/quiz-recap/${currentQuiz.id}`}
-                  key={currentQuiz.id}
-                  className="block"
-                >
-                  <div className="relative rounded-lg overflow-hidden shadow-md hover:shadow-lg transition">
-                    {/* 16:9 container */}
-                    <div className="aspect-w-16 aspect-h-9">
-                      <Image
-                        src={
-                          currentQuiz.thumbnail_url ||
-                          "/images/quiz-default.jpg" // Fallback
-                        }
-                        alt={`${currentQuiz.quiz_day} thumbnail`}
-                        fill
-                        style={{ objectFit: "cover" }}
-                        className="brightness-75"
-                        priority={false}
-                      />
-                    </div>
-                  </div>
-                </Link>
-              </>
-            )}
-
-            {/* Previous Quizzes */}
-            {previousQuizzes.length > 0 && (
-              <>
-                <h2 className="text-h2 text-primary-700 text-xl font-bold mt-4 mb-4">
-                  Previous Quizzes
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {previousQuizzes.map((quiz) => (
-                    <Link href={`/quiz-recap/${quiz.id}`} key={quiz.id}>
-                      <div className="bg-primary-600 text-white p-4 rounded-lg shadow-md hover:bg-primary-500 transition">
-                        {quiz.quiz_day} – {formatDate(quiz.quiz_date)}
-                      </div>
-                    </Link>
-                  ))}
+          {/* Current quiz thumbnail (no card/border) */}
+          <div>
+            {loading ? (
+              <div className="aspect-[16/9] w-full animate-pulse rounded-xl bg-white/30" />
+            ) : currentQuiz ? (
+              <Link
+                href={`/quiz-recap/${currentQuiz.id}`}
+                aria-label={`Open ${currentQuiz.quiz_day} ${formatDate(
+                  currentQuiz.quiz_date
+                )} recap`}
+                className="block"
+              >
+                <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl shadow-xl">
+                  <Image
+                    src={
+                      currentQuiz.thumbnail_url || "/images/quiz-default.jpg"
+                    }
+                    alt={`${currentQuiz.quiz_day} ${formatDate(
+                      currentQuiz.quiz_date
+                    )} thumbnail`}
+                    fill
+                    className="object-cover"
+                    priority
+                  />
                 </div>
-              </>
+              </Link>
+            ) : (
+              <div className="text-white/80">No current quiz found.</div>
             )}
-          </>
-        )}
-      </Section>
-    </>
+          </div>
+        </section>
+
+        {/* Previous quizzes */}
+        <section className="mt-10">
+          <h2 className="mb-4 text-xl font-bold text-black">
+            📚 Previous Quizzes
+          </h2>
+
+          {loading ? (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-20 animate-pulse rounded-xl bg-white/30"
+                />
+              ))}
+            </div>
+          ) : previousQuizzes.length ? (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {previousQuizzes.map((q) => (
+                <Link key={q.id} href={`/quiz-recap/${q.id}`}>
+                  <Card variant="pop" hover>
+                    <CardContent>
+                      <p className="font-medium text-textc">
+                        {q.quiz_day} – {formatDate(q.quiz_date)}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-white/80">No previous quizzes yet.</p>
+          )}
+        </section>
+      </div>
+    </main>
   );
 }

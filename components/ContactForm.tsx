@@ -1,23 +1,29 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useEffect, useState } from "react";
 import { supabase } from "@/supabaseClient";
+import { BrandButton } from "@/components/ui/BrandButton";
 
 export default function ContactForm() {
+  // Make loading explicit so the UI doesn’t flash the “not logged in” state
+  const [userLoading, setUserLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+
+  const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
     "idle"
   );
 
   useEffect(() => {
-    const getUser = async () => {
+    (async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       setUser(user);
+
       if (user) {
-        // Fetch profile for username
         const { data: profile } = await supabase
           .from("profiles")
           .select("username, email")
@@ -25,143 +31,164 @@ export default function ContactForm() {
           .single();
         setProfile(profile);
       }
-    };
-    getUser();
+      setUserLoading(false);
+    })();
   }, []);
 
-  // Show loading state while fetching user/profile
-  if (user === undefined || (user && !profile)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-700 via-purple-500 to-purple-300 py-12 px-4">
-        <div className="bg-white/80 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
-          <h2 className="text-2xl font-bold text-purple-700 mb-2">
-            Contact Us
-          </h2>
-          <p className="text-purple-800 mb-4">Checking login status…</p>
-        </div>
-      </div>
-    );
-  }
+  const email = profile?.email || user?.email || "";
+  const username = profile?.username || user?.email?.split("@")[0] || "";
 
-  // Not logged in
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-700 via-purple-500 to-purple-300 py-12 px-4">
-        <div className="bg-white/80 rounded-2xl shadow-2xl max-w-md w-full p-8 text-center">
-          <h2 className="text-2xl font-bold text-purple-700 mb-2">
-            Contact Us
-          </h2>
-          <p className="text-purple-800 mb-4">
-            You must be logged in to send a message.
-          </p>
-          <a href="/auth" className="text-purple-700 underline font-semibold">
-            Sign In
-          </a>
-        </div>
-      </div>
-    );
-  }
-
-  const email = profile?.email || user.email || "";
-  const username = profile?.username || user.email?.split("@")[0] || "";
-
-  // Submit: Create thread and message
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!user) return;
     if (!message.trim()) {
       setStatus("error");
       return;
     }
-    setStatus("sending");
 
-    // 1. Create thread
-    const { data: thread, error: threadError } = await supabase
+    setStatus("sending");
+    const threadSubject = (subject || message.slice(0, 80)).trim();
+
+    // 1) create thread
+    const { data: thread, error: tErr } = await supabase
       .from("contact_threads")
       .insert({
         user_id: user.id,
-        subject: message.slice(0, 50), // Or let user choose a subject
+        subject: threadSubject,
       })
       .select()
       .single();
 
-    if (threadError || !thread) {
+    if (tErr || !thread) {
       setStatus("error");
       return;
     }
 
-    // 2. Add message
-    const { error: msgError } = await supabase.from("contact_messages").insert({
+    // 2) first message
+    const { error: mErr } = await supabase.from("contact_messages").insert({
       thread_id: thread.id,
       sender: "user",
       sender_id: user.id,
       message,
     });
 
-    if (msgError) {
+    if (mErr) {
       setStatus("error");
-      // Optionally: delete the thread if first message failed
       return;
     }
 
+    setSubject("");
     setMessage("");
     setStatus("sent");
-  };
+  }
+
+  // ----- UI -----
+  if (userLoading) {
+    return (
+      <div className="rounded-2xl border borderc bg-white/90 shadow-card p-6 text-center">
+        <h2 className="text-xl font-semibold text-textc">Contact Us</h2>
+        <p className="text-textc-muted mt-1">Checking login status…</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="rounded-2xl border borderc bg-white shadow-card p-6">
+        <h2 className="text-xl font-semibold text-textc mb-2">Contact Us</h2>
+        <p className="text-textc-muted">
+          You must be logged in to send a message.
+        </p>
+        <a
+          href="/auth?tab=signin"
+          className="mt-4 inline-flex rounded-lg bg-brand px-4 py-2 font-semibold text-white shadow-card hover:opacity-90"
+        >
+          Sign in
+        </a>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-700 via-purple-500 to-purple-300 py-12 px-4">
-      <div className="bg-white/80 rounded-2xl shadow-2xl max-w-md w-full p-8">
-        <h1 className="text-3xl font-extrabold text-purple-700 mb-2 text-center">
-          Contact Us
-        </h1>
-        <p className="text-center text-purple-800 mb-6">
-          Found an issue? Have a suggestion? Need something correcting? Let us
-          know! <br />
-          (You must be logged in to send a message.)
-        </p>
-        <form className="space-y-4" onSubmit={handleSubmit}>
+    <div className="rounded-2xl border borderc bg-white shadow-card p-6">
+      <h2 className="text-xl font-semibold text-textc mb-1">Contact Us</h2>
+      <p className="text-sm text-textc-muted mb-4">
+        We’ll reply in your profile inbox (Profile → Your Messages).
+      </p>
+
+      {/* success / error banners */}
+      {status === "sent" && (
+        <div className="mb-4 rounded-md border border-green-600/30 bg-green-50 px-3 py-2 text-green-800">
+          Thanks! Your message was sent. Watch for a reply in “Your Messages”.
+        </div>
+      )}
+      {status === "error" && (
+        <div className="mb-4 rounded-md border border-red-600/30 bg-red-50 px-3 py-2 text-red-700">
+          Please add a message (and try again).
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium text-textc mb-1">
+              Username
+            </label>
+            <input
+              value={username}
+              disabled
+              className="w-full rounded-lg border borderc bg-surface-subtle px-3 py-2 text-textc"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-textc mb-1">
+              Email
+            </label>
+            <input
+              value={email}
+              disabled
+              className="w-full rounded-lg border borderc bg-surface-subtle px-3 py-2 text-textc"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-textc mb-1">
+            Subject{" "}
+            <span className="text-textc-muted font-normal">(optional)</span>
+          </label>
           <input
-            name="username"
-            type="text"
-            value={username}
-            disabled
-            className="w-full px-4 py-3 bg-gray-100 border border-purple-300 text-purple-900 rounded-lg"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            placeholder="Short summary"
+            className="w-full rounded-lg border borderc bg-white px-3 py-2 text-textc focus:outline-none focus:ring-4 focus:ring-brand/20"
+            maxLength={120}
           />
-          <input
-            name="email"
-            type="email"
-            value={email}
-            disabled
-            className="w-full px-4 py-3 bg-gray-100 border border-purple-300 text-purple-900 rounded-lg"
-          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-textc mb-1">
+            Message
+          </label>
           <textarea
-            name="message"
-            rows={4}
-            placeholder="Start with your name, then type your message!"
-            className="w-full px-4 py-3 bg-white border border-purple-300 text-purple-900 rounded-lg focus:border-yellow-400 focus:ring-2 focus:ring-yellow-300 focus:outline-none"
-            required
+            rows={5}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
+            placeholder="Start with your name, then tell us what's up…"
+            className="w-full rounded-lg border borderc bg-white px-3 py-2 text-textc focus:outline-none focus:ring-4 focus:ring-brand/20"
+            required
           />
-          <button
-            type="submit"
-            className="w-full py-3 bg-purple-700 hover:bg-yellow-400 hover:text-purple-800 text-white font-bold rounded-lg shadow-md transition"
-            disabled={status === "sending"}
-          >
-            {status === "sending" ? "Sending..." : "Send Message"}
-          </button>
-        </form>
-        {status === "sent" && (
-          <p className="mt-4 text-center text-green-600 font-semibold">
-            Thank you! Your message has been sent. Look for replies in your
-            profile!
-          </p>
-        )}
-        {status === "error" && (
-          <p className="mt-4 text-center text-red-600 font-semibold">
-            Please write a message before sending, or try again.
-          </p>
-        )}
-      </div>
+        </div>
+
+        <BrandButton
+          type="submit"
+          loading={status === "sending"}
+          className="w-full sm:w-auto"
+          disabled={!message.trim()}
+        >
+          {status === "sending" ? "Sending…" : "Send Message"}
+        </BrandButton>
+      </form>
     </div>
   );
 }

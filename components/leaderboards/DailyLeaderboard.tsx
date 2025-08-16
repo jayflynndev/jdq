@@ -2,45 +2,50 @@
 import { useEffect, useState } from "react";
 import { fetchScoresByType } from "@/utils/fetchScoresByType";
 
-interface Score {
+type Score = {
   user_id: string;
   username: string;
   score: number | null;
   tiebreaker: number | null;
   quizDate: string;
-}
+};
 
 export default function DailyLeaderboard({
   quizType,
   searchedUsername,
 }: {
-  quizType: string;
+  quizType: "JDQ" | "JVQ";
   searchedUsername?: string;
 }) {
-  const [selectedDate, setSelectedDate] = useState(
-    () => new Date().toISOString().split("T")[0] // 'YYYY-MM-DD'
-  );
+  const todayISO = new Date().toISOString().split("T")[0];
+
+  const [selectedDate, setSelectedDate] = useState(todayISO);
   const [scores, setScores] = useState<Score[]>([]);
   const [showFull, setShowFull] = useState(false);
   const [userIndex, setUserIndex] = useState<number | null>(null);
   const [userScore, setUserScore] = useState<Score | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchData = async () => {
-      // 👉 fetch only this date from the DB
+      setLoading(true);
+
+      // fetch only this date from the DB
       const rows = await fetchScoresByType(quizType, { date: selectedDate });
 
-      // 👉 sort with null-safe tiebreaker (assume null is worst / big number)
+      // sort: score desc, then tiebreak asc (null = worst)
       const sorted = [...rows].sort((a, b) => {
         const as = a.score ?? -Infinity;
         const bs = b.score ?? -Infinity;
         if (bs !== as) return bs - as;
         const at = a.tiebreaker ?? Number.POSITIVE_INFINITY;
         const bt = b.tiebreaker ?? Number.POSITIVE_INFINITY;
-        return at - bt; // lower tiebreaker wins
+        return at - bt;
       });
 
-      // 👉 dedupe: keep only the best entry per user_id for the day
+      // dedupe: keep best per user_id
       const seen = new Set<string>();
       const uniqueBest: Score[] = [];
       for (const r of sorted) {
@@ -50,37 +55,58 @@ export default function DailyLeaderboard({
         }
       }
 
-      setScores(uniqueBest);
+      if (!cancelled) {
+        setScores(uniqueBest);
 
-      if (searchedUsername) {
-        const idx = uniqueBest.findIndex(
-          (s) => s.username?.toLowerCase() === searchedUsername.toLowerCase()
-        );
-        setUserIndex(idx !== -1 ? idx : null);
-        setUserScore(idx !== -1 ? uniqueBest[idx] : null);
-      } else {
-        setUserIndex(null);
-        setUserScore(null);
+        if (searchedUsername) {
+          const idx = uniqueBest.findIndex(
+            (s) => s.username?.toLowerCase() === searchedUsername.toLowerCase()
+          );
+          setUserIndex(idx !== -1 ? idx : null);
+          setUserScore(idx !== -1 ? uniqueBest[idx] : null);
+        } else {
+          setUserIndex(null);
+          setUserScore(null);
+        }
+
+        setLoading(false);
       }
     };
+
     fetchData();
+    return () => {
+      cancelled = true;
+    };
   }, [selectedDate, searchedUsername, quizType]);
+
+  const renderPosCell = (rank: number) => {
+    const medal =
+      rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : null;
+    return (
+      <span className="inline-flex items-center gap-2">
+        {medal && <span aria-hidden>{medal}</span>}
+        <span className="font-semibold">#{rank}</span>
+      </span>
+    );
+  };
 
   return (
     <div className="space-y-4">
-      {/* Date Picker */}
-      <div className="flex justify-between items-center gap-4 mb-4 flex-wrap">
+      {/* Date Picker + Toggle */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
         <label className="text-white font-semibold">
           Select a date:
           <input
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="ml-2 px-2 py-1 rounded text-black"
+            max={todayISO}
+            className="ml-2 rounded px-2 py-1 text-black"
           />
         </label>
+
         <button
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-semibold"
+          className="rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white shadow-card hover:opacity-90"
           onClick={() => setShowFull((prev) => !prev)}
         >
           {showFull ? "Hide Full Leaderboard" : "Show Full Leaderboard"}
@@ -89,60 +115,90 @@ export default function DailyLeaderboard({
 
       {/* User Highlight Box */}
       {userScore && (
-        <div className="bg-green-100 text-black p-4 rounded shadow mb-2">
+        <div className="mb-2 rounded-lg border border-emerald-300 bg-emerald-50 p-4 text-emerald-900 shadow-card">
           {userIndex !== null && userIndex < 10 ? (
-            <p className="font-bold mb-1">
-              🎉 Congrats! You&#39;re in the top 10 today:
-            </p>
+            <p className="mb-1 font-bold">🎉 You’re in today’s top 10!</p>
           ) : (
-            <p className="font-bold mb-1">
-              You’re not in the top 10, but here’s your daily ranking:
-            </p>
+            <p className="mb-1 font-bold">Your daily ranking:</p>
           )}
           <p>
-            <strong>#{(userIndex ?? 0) + 1}</strong> – {userScore.username} –{" "}
+            <strong>#{(userIndex ?? 0) + 1}</strong> — {userScore.username} —{" "}
             {userScore.score} pts (Tiebreak: {userScore.tiebreaker ?? "—"})
           </p>
         </div>
       )}
 
       {/* Leaderboard Table */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white text-black rounded shadow">
-          <thead>
-            <tr className="bg-gray-200 text-center">
-              <th className="py-2 px-4">Position</th>
-              <th className="py-2 px-4">Username</th>
-              <th className="py-2 px-4">Score</th>
-              <th className="py-2 px-4">Tiebreak</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(showFull ? scores : scores.slice(0, 10)).map((user, index) => (
-              <tr
-                key={user.user_id} // better key than index
-                className={`border-t border-gray-300 text-center ${
-                  searchedUsername &&
-                  user.username?.toLowerCase() ===
-                    searchedUsername.toLowerCase()
-                    ? "bg-green-100 font-bold"
-                    : ""
-                }`}
-              >
-                <td className="py-2 px-4 font-bold">#{index + 1}</td>
-                <td className="py-2 px-4">{user.username}</td>
-                <td className="py-2 px-4">{user.score}</td>
-                <td className="py-2 px-4">{user.tiebreaker ?? "—"}</td>
+      {loading ? (
+        <div className="text-sm text-white/80">Loading daily leaderboard…</div>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border borderc bg-white shadow-card">
+          <table className="min-w-full text-black table-fixed">
+            <thead className="sticky top-0 z-10 bg-surface-subtle">
+              <tr className="text-textc">
+                <th className="px-4 py-2 text-left w-28">Position</th>
+                <th className="px-4 py-2 text-center">Username</th>
+                <th className="px-4 py-2 text-right w-24">Score</th>
+                <th className="px-4 py-2 text-right w-28">Tiebreak</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        {scores.length === 0 && (
-          <p className="text-white text-center mt-4">
-            No scores available for this day.
-          </p>
-        )}
-      </div>
+            </thead>
+            <tbody>
+              {(showFull ? scores : scores.slice(0, 10)).map((user, index) => {
+                const rank = index + 1;
+
+                // top-3 backgrounds
+                const topBg =
+                  rank === 1
+                    ? "bg-amber-50"
+                    : rank === 2
+                    ? "bg-zinc-50"
+                    : rank === 3
+                    ? "bg-orange-50"
+                    : "";
+
+                const isSearchedMatch =
+                  !!searchedUsername &&
+                  user.username?.toLowerCase() ===
+                    searchedUsername.toLowerCase();
+
+                return (
+                  <tr
+                    key={user.user_id}
+                    className={[
+                      "border-t border-gray-200 transition-colors hover:bg-surface-subtle/60",
+                      topBg,
+                      isSearchedMatch ? "ring-2 ring-brand/50" : "",
+                    ].join(" ")}
+                  >
+                    <td className="px-4 py-2 text-left w-28">
+                      {renderPosCell(rank)}
+                    </td>
+                    <td
+                      className={`px-4 py-2 ${
+                        rank <= 3 ? "font-semibold" : ""
+                      }`}
+                    >
+                      {user.username}
+                    </td>
+                    <td className="px-4 py-2 text-right w-24  tabular-nums">
+                      {user.score}
+                    </td>
+                    <td className="px-4 py-2 text-right w-28  tabular-nums">
+                      {user.tiebreaker ?? "—"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          {scores.length === 0 && (
+            <p className="p-4 text-center text-textc-muted">
+              No scores available for this day.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
