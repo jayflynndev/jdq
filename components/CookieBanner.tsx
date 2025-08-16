@@ -17,7 +17,7 @@ export default function CookieBanner() {
       <div className="mx-auto max-w-5xl m-4 rounded-xl border border-purple-800 bg-white/95 p-4 shadow-lg">
         <p className="text-sm text-gray-800">
           We use cookies for analytics and ads personalisation. See our{" "}
-          <a href="/privacy" className="underline text-purple-700">
+          <a href="/privacy-policy" className="underline text-purple-700">
             Privacy Policy
           </a>
           .
