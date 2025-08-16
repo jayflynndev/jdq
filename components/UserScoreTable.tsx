@@ -61,7 +61,7 @@ export default function UserScoreTable({ quizType }: UserScoreTableProps) {
       return;
     }
     const sorted = (data || []).sort(
-      (a, b) =>
+      (a: Score, b: Score) =>
         new Date(b.quiz_date).getTime() - new Date(a.quiz_date).getTime()
     ) as Score[];
     setScores(sorted);
