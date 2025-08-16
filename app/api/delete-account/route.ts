@@ -1,59 +1,47 @@
 import { NextResponse } from "next/server";
-
 import { createClient } from "@supabase/supabase-js";
 
 export async function POST(req: Request) {
   try {
-    const authHeader = req.headers.get("authorization");
-    const token = authHeader?.replace("Bearer ", "");
+    const token = req.headers.get("authorization")?.replace("Bearer ", "");
+    if (!token) return new NextResponse("Unauthorized", { status: 401 });
 
-    if (!token) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
-
-    // verify the token
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    // Server-only client with SERVICE_ROLE key
+    const admin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!, // same URL
+      process.env.SUPABASE_SERVICE_ROLE_KEY!, // NOT anon
+      { auth: { persistSession: false } }
     );
+
+    // Validate user from token
     const {
       data: { user },
-      error,
-    } = await supabase.auth.getUser(token);
-
-    if (error || !user)
+      error: authError,
+    } = await admin.auth.getUser(token);
+    if (authError || !user)
       return new NextResponse("Unauthorized", { status: 401 });
 
     const uid = user.id;
 
-    // 2) Admin client with service-role (server-only key!)
-    const admin = createClient(
-      process.env.SUPABASE_URL!, // <-- not NEXT_PUBLIC
-      process.env.SUPABASE_SERVICE_ROLE_KEY!, // <-- server-only
-      { auth: { persistSession: false } }
-    );
-
-    try {
-      // 3) Delete app data (adjust table names if yours differ)
-      await admin
-        .from("friendships")
-        .delete()
-        .or(`requester_id.eq.${uid},addressee_id.eq.${uid}`);
-      await admin.from("leaderboard_members").delete().eq("user_id", uid);
-      await admin.from("scores").delete().eq("uid", uid);
-      await admin.from("contact_messages").delete().eq("sender_id", uid);
-      await admin.from("contact_threads").delete().eq("user_id", uid);
-      await admin.from("profiles").delete().eq("id", uid);
-
-      // 4) Delete auth user
-      await admin.auth.admin.deleteUser(uid);
-
-      return NextResponse.json({ ok: true });
-    } catch (e: any) {
-      console.error("Delete account failed:", e);
-      return new NextResponse(e?.message || "Delete failed", { status: 500 });
+    // Do it all in a transaction (via RPC)
+    const { error: rpcErr } = await admin.rpc("delete_user_cascade", {
+      p_uid: uid,
+    });
+    if (rpcErr) {
+      console.error("Cascade RPC failed:", rpcErr);
+      return new NextResponse(rpcErr.message, { status: 500 });
     }
-  } catch {
+
+    // Finally, delete from auth
+    const { error: delErr } = await admin.auth.admin.deleteUser(uid);
+    if (delErr) {
+      console.error("Auth delete failed:", delErr);
+      return new NextResponse(delErr.message, { status: 500 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (e: any) {
+    console.error("Delete route error:", e);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
