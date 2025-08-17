@@ -30,6 +30,7 @@ function looksLikeEmail(s: string) {
 }
 
 /* -------------------- Sign In -------------------- */
+/* -------------------- Sign In -------------------- */
 function SignInForm() {
   const router = useRouter();
   const [identifier, setIdentifier] = React.useState(""); // email OR username
@@ -56,7 +57,9 @@ function SignInForm() {
       if (!looksLikeEmail(email)) {
         const { data, error: rpcErr } = await supabase.rpc(
           "email_for_username",
-          { p_username: email }
+          {
+            p_username: email,
+          }
         );
         if (rpcErr) throw rpcErr;
         if (!data) {
@@ -80,7 +83,6 @@ function SignInForm() {
     }
   }
 
-  // resend verification
   async function resendVerification() {
     setResendMsg(null);
     const input = identifier.trim();
@@ -96,7 +98,9 @@ function SignInForm() {
       if (!looksLikeEmail(email)) {
         const { data, error: rpcErr } = await supabase.rpc(
           "email_for_username",
-          { p_username: email }
+          {
+            p_username: email,
+          }
         );
         if (rpcErr) throw rpcErr;
         if (!data) {
@@ -143,18 +147,6 @@ function SignInForm() {
         />
       </FormField>
 
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-textc-muted">Didn’t get the email?</span>
-        <button
-          type="button"
-          onClick={resendVerification}
-          disabled={resending}
-          className="text-sm font-semibold text-brand hover:opacity-80 disabled:opacity-50"
-        >
-          {resending ? "Sending…" : "Resend verification email"}
-        </button>
-      </div>
-
       {error && <p className="text-sm text-red-600">{error}</p>}
       {resendMsg && (
         <p className="text-sm mt-1">
@@ -169,6 +161,25 @@ function SignInForm() {
       <BrandButton type="submit" loading={loading} className="w-full">
         Sign in
       </BrandButton>
+
+      {/* Help links */}
+      <div className="mt-4 flex flex-col gap-2 text-sm text-center">
+        <a
+          href="/forgot-password"
+          className="text-brand font-medium hover:underline"
+        >
+          Forgotten your password? Click here
+        </a>
+
+        <button
+          type="button"
+          onClick={resendVerification}
+          disabled={resending}
+          className="text-brand font-medium hover:underline disabled:opacity-50"
+        >
+          {resending ? "Sending…" : "Resend verification email"}
+        </button>
+      </div>
     </form>
   );
 }
