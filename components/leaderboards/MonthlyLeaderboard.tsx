@@ -45,11 +45,9 @@ export default function MonthlyLeaderboard({
 
       const { data, error } = await supabase.rpc("get_leaderboard", {
         p_quiz_type: quizType,
-        p_date_from: from,
-        p_date_to: to,
-        p_day_types: null, // JVQ-specific if needed later
-        p_start_date: null,
-        p_min_entries: 5, // monthly threshold
+        p_date_from: from, // "2025-08-01"
+        p_date_to: to, // "2025-08-31"
+        p_min_entries: 5,
       });
 
       if (error) {
