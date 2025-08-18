@@ -201,8 +201,8 @@ export default function NavBar() {
   const labelWithBadge = (label: string) => {
     let count = 0;
     if (label === "Your Leaderboards") count = notifs.leaderboard_invites;
-    if (label === "Profile") count = notifs.friend_requests;
-    if (label === "Message Us!") count = notifs.admin_messages;
+    if (label === "Profile")
+      count = notifs.friend_requests + notifs.admin_messages;
 
     if (count <= 0) return <span>{label}</span>;
     return (
