@@ -16,7 +16,7 @@ function isoWeekStart(d: Date) {
   const day = date.getUTCDay() || 7; // 1..7, Mon..Sun
   if (day !== 1) date.setUTCDate(date.getUTCDate() - (day - 1));
   return new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getDate())
   );
 }
 function monthStart(d: Date) {
@@ -38,18 +38,27 @@ export async function fetchPrivateLeaderboardStandings(
   const memberIds = ctx.members.map((m) => m.user_id);
   if (memberIds.length === 0) return { standings: [], ctx };
 
-  // Build date window
+  // --- Date logic ---
   const today = new Date();
   let fromDate: string | null = null;
+
   if (ctx.quiz_type === "JDQ") {
-    if (ctx.jdq_scope === "weekly") fromDate = toYMD(isoWeekStart(today));
-    else if (ctx.jdq_scope === "monthly") fromDate = toYMD(monthStart(today));
-  } else {
-    if (ctx.jvq_scope === "monthly") fromDate = toYMD(monthStart(today));
+    if (ctx.jdq_scope === "weekly") {
+      fromDate = toYMD(isoWeekStart(today));
+    } else if (ctx.jdq_scope === "monthly") {
+      fromDate = toYMD(monthStart(today));
+    }
+  } else if (ctx.quiz_type === "JVQ") {
+    if (ctx.jvq_scope === "monthly") {
+      fromDate = toYMD(monthStart(today));
+    }
   }
+
+  // If user set a start_date, honour it (take the later of the two)
   if (ctx.start_date) {
-    if (!fromDate) fromDate = ctx.start_date;
-    else
+    if (!fromDate) {
+      fromDate = ctx.start_date;
+    } else {
       fromDate = toYMD(
         new Date(
           Math.max(
@@ -58,29 +67,35 @@ export async function fetchPrivateLeaderboardStandings(
           )
         )
       );
+    }
   }
 
-  // Base query
+  // --- Base query ---
   let q = supabase
     .from("scores")
     .select("uid, score, tiebreaker, quiz_date, quiz_type, day_type")
     .eq("quiz_type", ctx.quiz_type)
     .in("uid", memberIds);
 
-  if (fromDate) q = q.gte("quiz_date", fromDate);
+  if (fromDate) {
+    q = q.gte("quiz_date", fromDate);
+  }
 
-  // JVQ day filter
+  // --- JVQ day filter ---
   if (ctx.quiz_type === "JVQ") {
     const days = (ctx.jvq_days || []).map((s) => s.toLowerCase());
     const wantCombined = days.includes("combined");
     const wantThu = days.includes("thursday");
     const wantSat = days.includes("saturday");
+
     if (!wantCombined) {
       const allowed: string[] = [];
       if (wantThu) allowed.push("Thursday");
       if (wantSat) allowed.push("Saturday");
-      if (allowed.length) q = q.in("day_type", allowed);
-      else
+      if (allowed.length) {
+        q = q.in("day_type", allowed);
+      } else {
+        // No days selected → return all members with 0s
         return {
           standings: ctx.members.map((m) => ({
             user_id: m.user_id,
@@ -92,6 +107,7 @@ export async function fetchPrivateLeaderboardStandings(
           })),
           ctx,
         };
+      }
     }
   }
 
@@ -101,7 +117,7 @@ export async function fetchPrivateLeaderboardStandings(
     return { standings: [], ctx };
   }
 
-  // Aggregate per user
+  // --- Aggregate per user ---
   const agg = new Map<
     string,
     { total: number; count: number; tb_sum: number }
@@ -117,7 +133,7 @@ export async function fetchPrivateLeaderboardStandings(
     agg.set(uid, cur);
   }
 
-  // Compose standings (everyone listed, 0s if no entries)
+  // --- Compose standings (everyone listed, 0s if no entries) ---
   const standings: PrivateStanding[] = ctx.members.map((m) => {
     const a = agg.get(m.user_id) || { total: 0, count: 0, tb_sum: 0 };
     const avg = a.count ? a.total / a.count : 0;
@@ -132,7 +148,7 @@ export async function fetchPrivateLeaderboardStandings(
     };
   });
 
-  // Sort like globals: avg desc → avg_tb asc → username
+  // --- Sort like globals: avg desc → avg_tb asc → username ---
   standings.sort(
     (a, b) =>
       b.avg - a.avg ||
