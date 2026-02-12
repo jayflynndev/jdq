@@ -14,7 +14,7 @@ export const JVQ_GROUP: MenuGroup = {
     { label: "Quiz Recap", href: "/quiz-recap" },
     { label: "JVQ Leaderboards", href: "/lb-select/jvpqlb" },
     { label: "Add Your Score", href: "/profile?tab=add-score" },
-    { label: "QuizHub Live (Coming Soon)", disabled: true },
+    { label: "QuizHub Live (Coming Soon)", href: "/qhl/players/qhl" },
   ],
 };
 

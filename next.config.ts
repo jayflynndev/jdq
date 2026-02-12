@@ -20,7 +20,13 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  /* config options here */
+  webpack: (config: any, { dev }) => {
+    if (dev) {
+      config.cache = false;
+    }
+    return config;
+  },
 };
+/* config options here */
 
 export default nextConfig;

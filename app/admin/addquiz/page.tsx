@@ -15,7 +15,7 @@ export default function AddQuizPage() {
   const [questions, setQuestions] = useState(
     Array(5)
       .fill("")
-      .map(() => Array(10).fill(""))
+      .map(() => Array(10).fill("")),
   );
   type ImageUpload = { label: string; file: File | null };
   const [imageUploads, setImageUploads] = useState<{
@@ -33,7 +33,7 @@ export default function AddQuizPage() {
   const handleQuestionChange = (
     roundIndex: number,
     qIndex: number,
-    value: string
+    value: string,
   ) => {
     const updated = [...questions];
     updated[roundIndex][qIndex] = value;
@@ -52,7 +52,7 @@ export default function AddQuizPage() {
     part: "part1" | "part2",
     index: number,
     key: "label" | "file",
-    value: string | File | null
+    value: string | File | null,
   ) => {
     const updated = [...imageUploads[part]];
     if (key === "label") {
@@ -95,7 +95,7 @@ export default function AddQuizPage() {
             if (!file) return null;
             const url = await uploadImageToSupabase(file);
             return { label, url };
-          })
+          }),
         );
         return uploaded.filter(Boolean);
       };
@@ -246,7 +246,7 @@ export default function AddQuizPage() {
                     part,
                     index,
                     "file",
-                    e.target.files?.[0] || null
+                    e.target.files?.[0] || null,
                   )
                 }
               />

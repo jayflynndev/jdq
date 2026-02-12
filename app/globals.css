@@ -10,6 +10,16 @@
   --rhythm-4: 1rem;
   --rhythm-6: 1.5rem;
   --rhythm-8: 2rem;
+  --qhl-bg: #100622;
+  --qhl-bg-soft: #1a0f34;
+  --qhl-surface: #241246;
+  --qhl-surface-2: #2e1858;
+  --qhl-border: #4f2f8c;
+  --qhl-text: #f7f5ff;
+  --qhl-muted: #cabef2;
+  --qhl-accent: #ffd44c;
+  --qhl-accent-strong: #f9c900;
+  --qhl-danger: #ff6b7a;
 
   /* motion */
   --ease-out-soft: cubic-bezier(0.22, 0.61, 0.36, 1);
@@ -28,6 +38,22 @@ body {
 
 body {
   @apply bg-surface-subtle text-textc font-body;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 12% 12%, #39206d 0%, transparent 30%),
+    radial-gradient(circle at 90% 18%, #4f2f8c 0%, transparent 34%),
+    linear-gradient(
+      155deg,
+      var(--qhl-bg) 0%,
+      #16082d 42%,
+      var(--qhl-bg-soft) 100%
+    );
+  color: var(--qhl-text);
+  font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* Improve touch scrolling on mobile */
+  -webkit-overflow-scrolling: touch;
+  /* Prevent text size adjustment on orientation change */
+  -webkit-text-size-adjust: 100%;
 }
 
 /* Headings use Poppins for a friendly, modern vibe */
@@ -102,4 +128,188 @@ h6 {
 }
 .badge-gold {
   @apply bg-highlight/15 text-highlight;
+}
+
+/* Improve tap behavior on mobile */
+@media (hover: none) and (pointer: coarse) {
+  * {
+    -webkit-tap-highlight-color: rgba(255, 212, 76, 0.1);
+  }
+}
+
+@layer components {
+  .qhl-shell {
+    @apply mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 md:py-8 lg:px-8;
+  }
+
+  .qhl-card {
+    @apply rounded-2xl border p-4 shadow-lg backdrop-blur-md md:p-5;
+    border-color: color-mix(in oklab, var(--qhl-border) 85%, white 15%);
+    background: linear-gradient(
+      170deg,
+      color-mix(in oklab, var(--qhl-surface) 86%, white 14%) 0%,
+      color-mix(in oklab, var(--qhl-surface-2) 90%, black 10%) 100%
+    );
+    transition: all 0.3s ease;
+    /* Better touch targets on mobile */
+    min-height: 44px;
+  }
+
+  .qhl-card:hover {
+    box-shadow:
+      0 20px 40px rgba(0, 0, 0, 0.4),
+      0 0 0 1px color-mix(in oklab, var(--qhl-accent) 40%, transparent 60%),
+      0 0 30px rgba(255, 212, 76, 0.15);
+  }
+
+  .qhl-hero {
+    @apply rounded-2xl border p-5 shadow-2xl sm:rounded-3xl sm:p-6 md:p-8;
+    border-color: color-mix(
+      in oklab,
+      var(--qhl-border) 65%,
+      var(--qhl-accent) 35%
+    );
+    background:
+      radial-gradient(
+        circle at 85% 12%,
+        rgba(255, 212, 76, 0.25) 0%,
+        transparent 33%
+      ),
+      linear-gradient(150deg, #3a1b72 0%, #2a1453 55%, #1f103e 100%);
+  }
+
+  .qhl-btn-primary {
+    @apply inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-bold text-black shadow-sm transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50;
+    background: linear-gradient(
+      170deg,
+      #ffe682 0%,
+      var(--qhl-accent) 52%,
+      var(--qhl-accent-strong) 100%
+    );
+    /* Minimum touch target size for accessibility */
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .qhl-btn-primary:hover {
+    filter: brightness(1.04);
+  }
+
+  .qhl-btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  .qhl-btn-secondary {
+    @apply inline-flex items-center justify-center rounded-xl border px-5 py-3 text-sm font-semibold text-white transition active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50;
+    border-color: color-mix(in oklab, var(--qhl-border) 70%, white 30%);
+    background: color-mix(in oklab, var(--qhl-surface-2) 88%, black 12%);
+    /* Minimum touch target size for accessibility */
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .qhl-btn-secondary:hover {
+    background: color-mix(in oklab, var(--qhl-surface-2) 78%, white 22%);
+  }
+
+  .qhl-btn-secondary:active {
+    transform: scale(0.98);
+  }
+
+  .qhl-input {
+    @apply mt-1 w-full rounded-xl border px-4 py-3 text-sm text-white outline-none transition placeholder:text-violet-200/60;
+    border-color: color-mix(in oklab, var(--qhl-border) 70%, white 30%);
+    background: color-mix(in oklab, var(--qhl-surface) 86%, black 14%);
+    /* Better touch target */
+    min-height: 44px;
+    /* Prevent zoom on iOS */
+    font-size: max(16px, 1rem);
+  }
+
+  .qhl-input:focus {
+    border-color: color-mix(in oklab, var(--qhl-accent) 62%, white 38%);
+    box-shadow: 0 0 0 3px rgba(255, 212, 76, 0.24);
+  }
+
+  .qhl-label {
+    @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-violet-100/75 sm:text-sm;
+  }
+
+  .qhl-kicker {
+    @apply text-xs font-semibold uppercase tracking-[0.18em] text-yellow-200/85 sm:text-sm;
+  }
+
+  .qhl-room {
+    @apply relative;
+    color: var(--qhl-text);
+  }
+
+  .qhl-room :where(.bg-white, .bg-white\/70, .bg-slate-50) {
+    background: color-mix(
+      in oklab,
+      var(--qhl-surface) 84%,
+      black 16%
+    ) !important;
+  }
+
+  .qhl-room :where(.border, .border-slate-200, .border-slate-300) {
+    border-color: color-mix(
+      in oklab,
+      var(--qhl-border) 70%,
+      white 30%
+    ) !important;
+  }
+
+  .qhl-room :where(.text-slate-900, .text-slate-800, .text-slate-700) {
+    color: var(--qhl-text) !important;
+  }
+
+  .qhl-room :where(.text-slate-600, .text-slate-500, .text-slate-400) {
+    color: color-mix(in oklab, var(--qhl-muted) 85%, white 15%) !important;
+  }
+
+  .qhl-room :where(.bg-slate-900) {
+    color: #110814 !important;
+    background: linear-gradient(
+      170deg,
+      #ffe682 0%,
+      var(--qhl-accent) 52%,
+      var(--qhl-accent-strong) 100%
+    ) !important;
+  }
+
+  .qhl-room :where(input, textarea, select) {
+    border-color: color-mix(
+      in oklab,
+      var(--qhl-border) 70%,
+      white 30%
+    ) !important;
+    background: color-mix(
+      in oklab,
+      var(--qhl-surface-2) 86%,
+      black 14%
+    ) !important;
+    color: var(--qhl-text) !important;
+    min-height: 44px;
+    font-size: max(16px, 1rem);
+  }
+
+  .qhl-room :where(input, textarea, select)::placeholder {
+    color: color-mix(
+      in oklab,
+      var(--qhl-muted) 70%,
+      transparent 30%
+    ) !important;
+  }
+}
+
+/* Mobile-specific utilities */
+@layer utilities {
+  .touch-pan-y {
+    touch-action: pan-y;
+  }
+
+  .touch-pan-x {
+    touch-action: pan-x;
+  }
 }

@@ -58,6 +58,12 @@ export default function AdminDashboard() {
       title: "Messages",
       desc: "View and reply to user messages and contact form submissions.",
     },
+    {
+      href: "/admin/qhl",
+      icon: <FaListOl className="text-purple-500 text-5xl mb-4" />,
+      title: "Quiz Hub Live",
+      desc: "Control live quiz nights, venues, teams, and game flow.",
+    },
   ];
 
   return (
