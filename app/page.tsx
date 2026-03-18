@@ -19,7 +19,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function HomePage() {
+type HomePageProps = {
+  searchParams?: Promise<{
+    submitted?: string;
+  }>;
+};
+
+export default async function HomePage({ searchParams }: HomePageProps) {
+  const params = await searchParams;
+  const submitted = params?.submitted === "1";
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Website",
@@ -38,6 +47,15 @@ export default function HomePage() {
       />
 
       <main className="min-h-screen bg-gradient-to-b from-purple-50 via-purple-100 to-purple-900">
+        {submitted ? (
+          <div className="mx-auto max-w-7xl px-4 pt-4">
+            <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800 shadow-sm">
+              Thanks — your question has been submitted for the anniversary
+              quiz!
+            </div>
+          </div>
+        ) : null}
+
         <Hero />
 
         {/* Top ad slot (leaderboard / responsive) */}
