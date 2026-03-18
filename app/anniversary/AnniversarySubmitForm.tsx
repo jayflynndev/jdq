@@ -102,7 +102,7 @@ export default function AnniversarySubmitForm() {
           onChange={handleChange}
           maxLength={100}
           className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none ring-0 transition focus:border-purple-500 dark:border-gray-700 dark:bg-gray-950"
-          placeholder="e.g. Sport, TV, Geography"
+          placeholder="e.g. Sport, TV, Places"
         />
       </div>
 
