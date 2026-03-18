@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 type SubmissionBody = {
   name?: string;
-  email?: string;
+
   category?: string;
   question?: string;
   answer?: string;
@@ -22,13 +22,12 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json()) as SubmissionBody;
 
-    // Honeypot: bots often fill hidden fields
     if (body.website && body.website.trim() !== "") {
       return NextResponse.json({ success: true }, { status: 200 });
     }
 
     const name = cleanText(body.name, 100);
-    const email = cleanText(body.email, 200);
+
     const category = cleanText(body.category, 100);
     const question = cleanText(body.question, 500);
     const answer = cleanText(body.answer, 300);
@@ -43,31 +42,40 @@ export async function POST(request: Request) {
 
     const supabase = createAdminClient();
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("anniversary_question_submissions")
-      .insert({
-        name,
-        email,
-        category,
-        question,
-        answer,
-        notes,
-        status: "pending",
-      });
+      .insert([
+        {
+          name,
+
+          category,
+          question,
+          answer,
+          notes,
+          status: "pending",
+        },
+      ])
+      .select();
 
     if (error) {
       console.error("Supabase insert error:", error);
       return NextResponse.json(
-        { error: "Unable to save your submission right now." },
+        { error: `Supabase insert failed: ${error.message}` },
         { status: 500 },
       );
     }
 
-    return NextResponse.json({ success: true }, { status: 200 });
+    return NextResponse.json({ success: true, data }, { status: 200 });
   } catch (error) {
     console.error("Submission route error:", error);
+
     return NextResponse.json(
-      { error: "Something went wrong while submitting your question." },
+      {
+        error:
+          error instanceof Error
+            ? `Route failed: ${error.message}`
+            : "Unknown server error",
+      },
       { status: 500 },
     );
   }
