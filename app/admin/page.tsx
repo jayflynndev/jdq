@@ -3,7 +3,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/supabaseClient";
-import { FaListOl, FaEnvelopeOpenText, FaChartBar } from "react-icons/fa";
+import {
+  FaListOl,
+  FaEnvelopeOpenText,
+  FaChartBar,
+  FaFilePowerpoint,
+} from "react-icons/fa";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -59,10 +64,10 @@ export default function AdminDashboard() {
       desc: "View and reply to user messages and contact form submissions.",
     },
     {
-      href: "/admin/qhl",
-      icon: <FaListOl className="text-purple-500 text-5xl mb-4" />,
-      title: "Quiz Hub Live",
-      desc: "Control live quiz nights, venues, teams, and game flow.",
+      href: "/admin/host-slides",
+      icon: <FaFilePowerpoint className="text-orange-500 text-5xl mb-4" />,
+      title: "Host Slides",
+      desc: "Import quiz documents, prepare slides, and host live quiz nights.",
     },
   ];
 
@@ -71,7 +76,7 @@ export default function AdminDashboard() {
       <h1 className="text-4xl font-black text-yellow-400 mb-10 text-center">
         Admin Dashboard
       </h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
         {cards.map((card) => (
           <Link key={card.href} href={card.href}>
             <div className="cursor-pointer bg-white hover:bg-purple-50 shadow-xl rounded-2xl p-8 flex flex-col items-center transition group">
