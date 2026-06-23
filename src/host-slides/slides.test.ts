@@ -1,0 +1,157 @@
+import { describe, expect, it } from "vitest";
+import { mockHostSlideDecks } from "@/src/host-slides/mockDecks";
+import { buildHostSlideSequence } from "@/src/host-slides/slides";
+import type {
+  HostDeck,
+  HostPresenterSlide,
+  HostRound,
+} from "@/src/host-slides/types";
+
+function getDeck(quizType: HostDeck["quizType"]): HostDeck {
+  const deck = mockHostSlideDecks.find(
+    (candidate) => candidate.quizType === quizType,
+  );
+  if (!deck) throw new Error(`Missing ${quizType} mock deck`);
+  return deck;
+}
+
+function indexesOf(
+  slides: HostPresenterSlide[],
+  predicate: (slide: HostPresenterSlide) => boolean,
+): number[] {
+  return slides.flatMap((slide, index) => (predicate(slide) ? [index] : []));
+}
+
+function questionIndexes(
+  slides: HostPresenterSlide[],
+  round: HostRound,
+  type: "question" | "answer",
+): number[] {
+  return indexesOf(
+    slides,
+    (slide) => slide.type === type && slide.roundId === round.id,
+  );
+}
+
+function expectRoundSections(
+  slides: HostPresenterSlide[],
+  deck: HostDeck,
+): void {
+  deck.rounds.forEach((round) => {
+    const intros = indexesOf(
+      slides,
+      (slide) => slide.type === "round-intro" && slide.roundId === round.id,
+    );
+    const questions = questionIndexes(slides, round, "question");
+    const answers = questionIndexes(slides, round, "answer");
+
+    expect(intros).toHaveLength(2);
+    expect(intros[0]).toBeLessThan(Math.min(...questions));
+    expect(intros[1]).toBeLessThan(Math.min(...answers));
+  });
+}
+
+describe("buildHostSlideSequence", () => {
+  it("builds the section-based Thursday sequence", () => {
+    const deck = getDeck("thursday");
+    const slides = buildHostSlideSequence(deck);
+
+    expect(slides[0]).toMatchObject({ type: "title" });
+    expectRoundSections(slides, deck);
+
+    const firstHalfQuestionIndexes = deck.rounds
+      .slice(0, 3)
+      .flatMap((round) => questionIndexes(slides, round, "question"));
+    const firstHalfAnswerIndexes = deck.rounds
+      .slice(0, 3)
+      .flatMap((round) => questionIndexes(slides, round, "answer"));
+    expect(Math.max(...firstHalfQuestionIndexes)).toBeLessThan(
+      Math.min(...firstHalfAnswerIndexes),
+    );
+
+    const secondHalfQuestionIndexes = deck.rounds
+      .slice(3, 5)
+      .flatMap((round) => questionIndexes(slides, round, "question"));
+    const secondHalfAnswerIndexes = deck.rounds
+      .slice(3, 5)
+      .flatMap((round) => questionIndexes(slides, round, "answer"));
+    expect(Math.max(...secondHalfQuestionIndexes)).toBeLessThan(
+      Math.min(...secondHalfAnswerIndexes),
+    );
+
+    expect(slides.at(-2)?.type).toBe("tiebreaker-question");
+    expect(slides.at(-1)?.type).toBe("tiebreaker-answer");
+    expect(
+      slides.some(
+        (slide) =>
+          slide.type === "dingbat-question" || slide.type === "dingbat-answer",
+      ),
+    ).toBe(false);
+  });
+
+  it("places Saturday Dingbats between Round 5 questions and Round 4 answers", () => {
+    const deck = getDeck("saturday");
+    const slides = buildHostSlideSequence(deck);
+    expectRoundSections(slides, deck);
+
+    const dingbatQuestionIndex = slides.findIndex(
+      (slide) => slide.type === "dingbat-question",
+    );
+    const dingbatAnswerIndex = slides.findIndex(
+      (slide) => slide.type === "dingbat-answer",
+    );
+    const round5QuestionEnd = Math.max(
+      ...questionIndexes(slides, deck.rounds[4], "question"),
+    );
+    const round4AnswerStart = Math.min(
+      ...questionIndexes(slides, deck.rounds[3], "answer"),
+    );
+
+    expect(dingbatQuestionIndex).toBeGreaterThan(round5QuestionEnd);
+    expect(dingbatAnswerIndex).toBeGreaterThan(dingbatQuestionIndex);
+    expect(dingbatAnswerIndex).toBeLessThan(round4AnswerStart);
+    expect(slides.at(-2)?.type).toBe("tiebreaker-question");
+    expect(slides.at(-1)?.type).toBe("tiebreaker-answer");
+  });
+
+  it("uses the simpler Patreon branch", () => {
+    const deck = getDeck("patreon");
+    const slides = buildHostSlideSequence(deck);
+
+    expect(slides[0].type).toBe("title");
+    expect(
+      slides.some(
+        (slide) =>
+          slide.type === "dingbat-question" || slide.type === "dingbat-answer",
+      ),
+    ).toBe(false);
+    expect(
+      slides.some(
+        (slide) =>
+          slide.type === "tiebreaker-question" ||
+          slide.type === "tiebreaker-answer",
+      ),
+    ).toBe(false);
+
+    const round1AnswerEnd = Math.max(
+      ...questionIndexes(slides, deck.rounds[0], "answer"),
+    );
+    const round2QuestionStart = Math.min(
+      ...questionIndexes(slides, deck.rounds[1], "question"),
+    );
+    expect(round1AnswerEnd).toBeLessThan(round2QuestionStart);
+  });
+
+  it("omits tiebreak slides when a weekly deck has no tiebreak", () => {
+    const deck = structuredClone(getDeck("thursday"));
+    delete deck.tiebreaker;
+    const slides = buildHostSlideSequence(deck);
+
+    expect(slides.some((slide) => slide.type === "tiebreaker-question")).toBe(
+      false,
+    );
+    expect(slides.some((slide) => slide.type === "tiebreaker-answer")).toBe(
+      false,
+    );
+  });
+});

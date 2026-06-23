@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
-import NavBar from "@/components/NavBar";
-import Footer from "@/components/Footer";
 import { Toaster } from "react-hot-toast";
 import { siteConfig } from "@/config/siteConfig";
 import Script from "next/script";
 import clsx from "clsx";
-import CookieBanner from "@/components/CookieBanner";
+import { SiteChrome } from "@/components/SiteChrome";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -65,7 +63,6 @@ export default function RootLayout({
         )}
       >
         <Toaster position="top-center" />
-        <NavBar />
         {siteConfig.adsEnabled && siteConfig.adsenseClient && (
           <Script
             id="adsbygoogle-init"
@@ -75,9 +72,7 @@ export default function RootLayout({
             crossOrigin="anonymous"
           />
         )}
-        {children}
-        <CookieBanner />
-        <Footer />
+        <SiteChrome>{children}</SiteChrome>
       </body>
     </html>
   );

@@ -1,6 +1,7 @@
 import { FaFileWord, FaLayerGroup } from "react-icons/fa";
 import { BrandButton } from "@/components/ui/BrandButton";
 import { Card, CardContent } from "@/components/ui/Card";
+import { SavedDeckList } from "@/components/host-slides/SavedDeckList";
 
 export default function HostSlidesPage() {
   return (
@@ -15,26 +16,32 @@ export default function HostSlidesPage() {
         </p>
       </section>
 
-      <Card className="max-w-3xl" hover={false}>
+      <Card hover={false}>
         <CardContent className="space-y-5">
           <div className="flex flex-wrap gap-3">
-            <BrandButton leftIcon={<FaFileWord />} disabled>
+            <BrandButton
+              href="/admin/host-slides/import"
+              leftIcon={<FaFileWord />}
+            >
               Import Word Document
             </BrandButton>
             <BrandButton
+              href="#prepared-decks"
               variant="outline"
               leftIcon={<FaLayerGroup />}
-              disabled
             >
               View Prepared Decks
             </BrandButton>
           </div>
 
           <p className="rounded-lg border border-amber-300/50 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            The database and document importer are not wired up yet.
+            Quiz documents are pasted as text for now. Image uploads are not
+            wired up yet.
           </p>
         </CardContent>
       </Card>
+
+      <SavedDeckList />
     </main>
   );
 }
