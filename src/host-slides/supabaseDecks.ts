@@ -15,6 +15,8 @@ type HostSlideDeckRow = {
   quiz_type: HostQuizType;
   quiz_date: string;
   status: HostDeckStatus;
+  linked_quiz_recap_id: string | null;
+  quiz_recap_last_published_at: string | null;
 };
 
 type HostSlideRoundRow = {
@@ -102,6 +104,14 @@ function mapDeck(
     quizType: deckRow.quiz_type,
     quizDate: deckRow.quiz_date,
     status: deckRow.status,
+    ...(deckRow.linked_quiz_recap_id
+      ? { linkedQuizRecapId: deckRow.linked_quiz_recap_id }
+      : {}),
+    ...(deckRow.quiz_recap_last_published_at
+      ? {
+          quizRecapLastPublishedAt: deckRow.quiz_recap_last_published_at,
+        }
+      : {}),
   } as const;
 
   if (deckRow.quiz_type === "patreon") {
@@ -265,7 +275,9 @@ export async function createHostDeck(deck: HostDeck): Promise<HostDeck> {
 export async function loadHostDeck(deckId: string): Promise<HostDeck> {
   const { data: deckData, error: deckError } = await supabase
     .from("host_slide_decks")
-    .select("id,title,quiz_type,quiz_date,status")
+    .select(
+      "id,title,quiz_type,quiz_date,status,linked_quiz_recap_id,quiz_recap_last_published_at",
+    )
     .eq("id", deckId)
     .single();
   if (deckError) throw new Error(deckError.message);
@@ -309,7 +321,9 @@ export async function loadHostDeck(deckId: string): Promise<HostDeck> {
 export async function listHostDecks(): Promise<HostDeck[]> {
   const { data: deckData, error: deckError } = await supabase
     .from("host_slide_decks")
-    .select("id,title,quiz_type,quiz_date,status")
+    .select(
+      "id,title,quiz_type,quiz_date,status,linked_quiz_recap_id,quiz_recap_last_published_at",
+    )
     .order("quiz_date", { ascending: false });
   if (deckError) throw new Error(deckError.message);
 

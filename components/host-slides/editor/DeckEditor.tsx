@@ -12,6 +12,7 @@ import {
 } from "react-icons/fa";
 import { BrandButton } from "@/components/ui/BrandButton";
 import { DingbatsEditor } from "@/components/host-slides/editor/DingbatsEditor";
+import { QuizRecapReviewPanel } from "@/components/host-slides/editor/QuizRecapReviewPanel";
 import {
   createEmptyDingbatSet,
   type HostDeck,
@@ -28,6 +29,7 @@ import {
   uploadHostSlideImage,
 } from "@/src/host-slides/supabaseImages";
 import { getImageFileFromDataTransfer } from "@/src/host-slides/browserImageFiles";
+import type { QuizRecapPublishResult } from "@/src/host-slides/quizRecapPublishing";
 
 type DeckEditorProps = {
   deckId: string;
@@ -456,6 +458,18 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
     });
   }
 
+  function applyRecapPublication(result: QuizRecapPublishResult) {
+    setDeck((current) =>
+      current
+        ? {
+            ...current,
+            linkedQuizRecapId: result.recapId,
+            quizRecapLastPublishedAt: result.publishedAt,
+          }
+        : current,
+    );
+  }
+
   async function saveDraft() {
     if (!deck) return;
     setSaving(true);
@@ -660,6 +674,13 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
           </BrandButton>
         </section>
       )}
+
+      {deck.quizType === "thursday" || deck.quizType === "saturday" ? (
+        <QuizRecapReviewPanel
+          deck={deck}
+          onPublished={applyRecapPublication}
+        />
+      ) : null}
 
       <section className="qhl-card flex flex-wrap items-center gap-3">
         <BrandButton

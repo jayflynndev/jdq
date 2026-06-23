@@ -6,6 +6,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { supabase } from "@/supabaseClient";
 import { Card, CardContent } from "@/components/ui/Card";
+import {
+  getDateInTimeZone,
+  selectQuizRecapListing,
+} from "@/src/quiz-recap/listing";
 
 type Quiz = {
   id: string;
@@ -23,7 +27,7 @@ export default function QuizRecapPage() {
       try {
         const { data, error } = await supabase
           .from("quizzes")
-          .select("*")
+          .select("id,quiz_day,quiz_date,thumbnail_url")
           .order("quiz_date", { ascending: false });
         if (error) throw error;
         setQuizzes(data || []);
@@ -35,8 +39,10 @@ export default function QuizRecapPage() {
     })();
   }, []);
 
-  const currentQuiz = quizzes[0];
-  const previousQuizzes = quizzes.slice(1, 7);
+  const { currentQuiz, previousQuizzes } = selectQuizRecapListing(
+    quizzes,
+    getDateInTimeZone(new Date()),
+  );
 
   const formatDate = (iso: string) => {
     const [y, m, d] = iso.split("-");

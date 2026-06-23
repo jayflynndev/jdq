@@ -42,6 +42,8 @@ interface HostDeckBase {
   title: string;
   quizDate: string;
   status: HostDeckStatus;
+  linkedQuizRecapId?: string;
+  quizRecapLastPublishedAt?: string;
 }
 
 export interface ThursdayHostDeck extends HostDeckBase {
