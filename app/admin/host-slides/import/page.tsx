@@ -9,8 +9,8 @@ export default function HostSlidesImportPage() {
           Import Review
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-violet-100/85 md:text-base">
-          Parse pasted quiz content and review every round, question, answer,
-          and picture marker before creating a draft.
+          Upload a Word document or paste quiz content, then review every
+          round, question, answer, and picture marker before creating a draft.
         </p>
       </section>
 

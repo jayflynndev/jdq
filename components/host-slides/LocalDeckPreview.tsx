@@ -52,7 +52,7 @@ export function LocalDeckPreview({ deckId }: { deckId: string }) {
           {slides.length} generated slides
         </p>
         <div className="mt-5">
-          <DeckActions deckId={deck.id} />
+          <DeckActions deck={deck} />
         </div>
       </section>
 

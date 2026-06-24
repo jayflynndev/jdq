@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FaCompress,
   FaExpand,
@@ -10,12 +10,77 @@ import {
 import { SlideCanvas } from "@/components/host-slides/SlideCanvas";
 import type { HostDeck } from "@/src/host-slides/types";
 import { buildHostSlideSequence } from "@/src/host-slides/slides";
+import {
+  getPresenterPreloadUrls,
+  getPresenterSlideImageUrls,
+} from "@/src/host-slides/presenterImagePreload";
 
 export function Presenter({ deck }: { deck: HostDeck }) {
-  const slides = buildHostSlideSequence(deck);
+  const slides = useMemo(() => buildHostSlideSequence(deck), [deck]);
   const [index, setIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(false);
+  const [settledImageUrls, setSettledImageUrls] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const pendingImages = useRef(new Map<string, HTMLImageElement>());
+  const preloadUrls = useMemo(
+    () => getPresenterPreloadUrls(deck, slides, index, 5),
+    [deck, index, slides],
+  );
+  const currentImageUrls = useMemo(
+    () => getPresenterSlideImageUrls(deck, slides[index]),
+    [deck, index, slides],
+  );
+  const currentImagesReady = currentImageUrls.every((url) =>
+    settledImageUrls.has(url),
+  );
+
+  useEffect(() => {
+    const desiredUrls = new Set(preloadUrls);
+    for (const [url, image] of pendingImages.current) {
+      if (desiredUrls.has(url)) continue;
+      image.onload = null;
+      image.onerror = null;
+      pendingImages.current.delete(url);
+    }
+
+    preloadUrls.forEach((url) => {
+      if (settledImageUrls.has(url) || pendingImages.current.has(url)) return;
+      const image = new Image();
+      const settle = () => {
+        pendingImages.current.delete(url);
+        setSettledImageUrls((current) => {
+          if (current.has(url)) return current;
+          const next = new Set(current);
+          next.add(url);
+          return next;
+        });
+      };
+      const settleAfterDecode = () => {
+        void image.decode().catch(() => undefined).finally(settle);
+      };
+      image.onload = settleAfterDecode;
+      image.onerror = settle;
+      pendingImages.current.set(url, image);
+      image.src = url;
+      if (image.complete) {
+        if (image.naturalWidth > 0) settleAfterDecode();
+        else settle();
+      }
+    });
+  }, [preloadUrls, settledImageUrls]);
+
+  useEffect(
+    () => () => {
+      pendingImages.current.forEach((image) => {
+        image.onload = null;
+        image.onerror = null;
+      });
+      pendingImages.current.clear();
+    },
+    [],
+  );
 
   const previous = useCallback(
     () => setIndex((current) => Math.max(0, current - 1)),
@@ -68,7 +133,13 @@ export function Presenter({ deck }: { deck: HostDeck }) {
 
   return (
     <main className="fixed inset-0 h-screen w-screen overflow-hidden bg-[#16082d] text-white">
-      <SlideCanvas deck={deck} slide={slides[index]} mode="presenter" />
+      {currentImagesReady ? (
+        <SlideCanvas deck={deck} slide={slides[index]} mode="presenter" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center bg-[#16082d] text-sm font-semibold text-violet-100/60">
+          Preparing slide image...
+        </div>
+      )}
 
       {controlsVisible ? (
         <nav className="absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-white/10 bg-black/55 px-2 py-1.5 shadow-xl backdrop-blur">

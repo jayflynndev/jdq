@@ -1,24 +1,20 @@
 import { BrandButton } from "@/components/ui/BrandButton";
+import { PresenterGateButton } from "@/components/host-slides/PresenterGateButton";
+import type { HostDeck } from "@/src/host-slides/types";
 
-export function DeckActions({ deckId }: { deckId: string }) {
+export function DeckActions({ deck }: { deck: HostDeck }) {
   return (
     <div className="flex flex-wrap gap-2">
-      <BrandButton href={`/admin/host-slides/${deckId}`} size="sm">
-        Review/Edit
-      </BrandButton>
+      <PresenterGateButton deck={deck} size="sm" />
       <BrandButton
-        href={`/admin/host-slides/${deckId}/slides`}
+        href={`/admin/host-slides/${deck.id}/slides`}
         variant="outline"
         size="sm"
       >
-        Preview Slides
+        Preview
       </BrandButton>
-      <BrandButton
-        href={`/host-slides/${deckId}/present`}
-        variant="accent"
-        size="sm"
-      >
-        Present
+      <BrandButton href={`/admin/host-slides/${deck.id}`} size="sm">
+        Edit
       </BrandButton>
     </div>
   );

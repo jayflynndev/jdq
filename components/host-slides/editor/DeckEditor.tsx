@@ -13,6 +13,8 @@ import {
 import { BrandButton } from "@/components/ui/BrandButton";
 import { DingbatsEditor } from "@/components/host-slides/editor/DingbatsEditor";
 import { QuizRecapReviewPanel } from "@/components/host-slides/editor/QuizRecapReviewPanel";
+import { ReadinessSummaryPanel } from "@/components/host-slides/editor/ReadinessSummaryPanel";
+import { PresenterGateButton } from "@/components/host-slides/PresenterGateButton";
 import {
   createEmptyDingbatSet,
   type HostDeck,
@@ -593,6 +595,8 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
         </dl>
       </section>
 
+      <ReadinessSummaryPanel deck={deck} />
+
       <section className="space-y-4">
         {deck.rounds.map((round, roundIndex) => (
           <details
@@ -697,9 +701,7 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
         >
           Preview Slides
         </BrandButton>
-        <BrandButton href={`/host-slides/${deck.id}/present`} variant="accent">
-          Present
-        </BrandButton>
+        <PresenterGateButton deck={deck} />
         {savedMessage ? (
           <p className="text-sm font-semibold text-green-200">{savedMessage}</p>
         ) : null}

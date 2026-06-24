@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardContent } from "@/components/ui/Card";
 import { DeckActions } from "@/components/host-slides/DeckActions";
-import { getHostDeckReadiness } from "@/src/host-slides/readiness";
+import { evaluateHostDeckReadiness } from "@/src/host-slides/readiness";
 import type { HostDeck, HostDeckStatus } from "@/src/host-slides/types";
 
 export function DeckList({
@@ -32,7 +32,15 @@ export function DeckList({
 
       <div className="grid gap-4 lg:grid-cols-3">
         {decks.map((deck) => {
-          const readiness = getHostDeckReadiness(deck);
+          const readiness = evaluateHostDeckReadiness(deck);
+          const missingImageCount = readiness.errors.filter(
+            (issue) =>
+              issue.code === "picture_image_missing" ||
+              issue.code === "dingbat_image_missing",
+          ).length;
+          const tiebreakerSet = !readiness.warnings.some(
+            (issue) => issue.code === "tiebreak_missing",
+          );
           const questionCount = deck.rounds.reduce(
             (total, round) => total + round.questions.length,
             0,
@@ -50,7 +58,7 @@ export function DeckList({
                       {deck.title}
                     </h3>
                   </div>
-                  <Badge variant={readiness.showReady ? "gold" : "neutral"}>
+                  <Badge variant={deck.status === "ready" ? "gold" : "neutral"}>
                     {deck.status === "ready" ? "Ready" : "Draft"}
                   </Badge>
                 </div>
@@ -61,42 +69,42 @@ export function DeckList({
 
                 <dl className="grid grid-cols-2 gap-2 rounded-lg bg-slate-50 p-3 text-xs text-slate-700">
                   <div>
-                    <dt className="font-semibold">Picture questions</dt>
-                    <dd>{readiness.pictureQuestionCount}</dd>
+                    <dt className="font-semibold">Readiness</dt>
+                    <dd>{readiness.score}%</dd>
                   </div>
                   <div>
-                    <dt className="font-semibold">Missing images</dt>
-                    <dd>{readiness.missingImageCount}</dd>
-                  </div>
-                  <div>
-                    <dt className="font-semibold">Tiebreak</dt>
-                    <dd>{readiness.tiebreakerSet ? "Set" : "Not set"}</dd>
+                    <dt className="font-semibold">Errors</dt>
+                    <dd>{readiness.errors.length}</dd>
                   </div>
                   <div>
                     <dt className="font-semibold">Warnings</dt>
-                    <dd>{readiness.validationWarningCount}</dd>
+                    <dd>{readiness.warnings.length}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-semibold">Tiebreak</dt>
+                    <dd>{tiebreakerSet ? "Set" : "Not set"}</dd>
                   </div>
                 </dl>
 
                 <div className="flex flex-wrap gap-2">
-                  {readiness.showReady ? (
-                    <span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-bold text-green-800">
-                      Ready
-                    </span>
-                  ) : null}
-                  {readiness.missingImageCount > 0 ? (
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+                      readiness.isReady
+                        ? "bg-green-100 text-green-800"
+                        : "bg-amber-100 text-amber-900"
+                    }`}
+                  >
+                    {readiness.isReady ? "Ready" : "Needs Attention"}{" "}
+                    {readiness.score}%
+                  </span>
+                  {missingImageCount > 0 ? (
                     <span className="rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-800">
                       Missing Images
                     </span>
                   ) : null}
-                  {!readiness.tiebreakerSet ? (
+                  {!tiebreakerSet ? (
                     <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-900">
                       Missing Tiebreak
-                    </span>
-                  ) : null}
-                  {readiness.needsReview ? (
-                    <span className="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-bold text-violet-800">
-                      Needs Review
                     </span>
                   ) : null}
                 </div>
@@ -107,7 +115,7 @@ export function DeckList({
                   </p>
                 ) : null}
 
-                <DeckActions deckId={deck.id} />
+                <DeckActions deck={deck} />
                 {onStatusChange ? (
                   <button
                     type="button"

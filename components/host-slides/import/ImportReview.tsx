@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FaFileImport, FaFlask, FaSave } from "react-icons/fa";
+import { FaFileImport, FaFileWord, FaFlask, FaSave } from "react-icons/fa";
 import { BrandButton } from "@/components/ui/BrandButton";
 import { Card, CardContent } from "@/components/ui/Card";
 import {
@@ -12,6 +12,10 @@ import { createRepresentativeJayQuizText } from "@/src/host-slides/jayQuizTextPa
 import type { HostDeck } from "@/src/host-slides/types";
 import { validateHostDeck } from "@/src/host-slides/validation";
 import { createHostDeck } from "@/src/host-slides/supabaseDecks";
+import {
+  DocxImportError,
+  extractTextFromDocx,
+} from "@/src/host-slides/docxTextExtractor";
 
 function StepHeading({ step, title }: { step: number; title: string }) {
   return (
@@ -31,6 +35,16 @@ export function ImportReview() {
   const [parsingWarnings, setParsingWarnings] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [extractingDocx, setExtractingDocx] = useState(false);
+  const [docxError, setDocxError] = useState<string | null>(null);
+  const [docxPreview, setDocxPreview] = useState<{
+    fileName: string;
+    title: string;
+    quizDate: string;
+  } | null>(null);
+  const [docxExtractedText, setDocxExtractedText] = useState<string | null>(
+    null,
+  );
 
   const validation = useMemo(
     () => (parsedDeck ? validateHostDeck(parsedDeck) : null),
@@ -51,28 +65,66 @@ export function ImportReview() {
     setDraftDeck(null);
     setParsingWarnings([]);
     setSaveError(null);
+    setDocxError(null);
+    setDocxPreview(null);
+    setDocxExtractedText(null);
   }
 
   function loadSampleQuiz() {
     updateSourceText(createRepresentativeJayQuizText());
   }
 
-  function parseSource() {
+  function parseText(text: string): HostDeck | null {
     setParsedDeck(null);
     setDraftDeck(null);
     setParsingWarnings([]);
 
     try {
-      const deck = parseJayQuizText(sourceText, {
+      const deck = parseJayQuizText(text, {
         strictStandardShape: false,
       });
       setParsedDeck(deck);
+      return deck;
     } catch (error: unknown) {
       const message =
         error instanceof HostDeckParseError || error instanceof Error
           ? error.message
           : "The quiz text could not be parsed.";
       setParsingWarnings([message]);
+      return null;
+    }
+  }
+
+  function parseSource() {
+    setDocxError(null);
+    void parseText(sourceText);
+  }
+
+  async function importDocx(file: File) {
+    setExtractingDocx(true);
+    setDocxError(null);
+    setDocxPreview(null);
+    setDocxExtractedText(null);
+    try {
+      const extractedText = await extractTextFromDocx(file);
+      updateSourceText(extractedText);
+      setDocxExtractedText(extractedText);
+      const deck = parseText(extractedText);
+      if (deck) {
+        setDocxPreview({
+          fileName: file.name,
+          title: deck.title,
+          quizDate: deck.quizDate,
+        });
+      }
+    } catch (error: unknown) {
+      setDocxError(
+        error instanceof DocxImportError || error instanceof Error
+          ? error.message
+          : "The DOCX could not be imported.",
+      );
+    } finally {
+      setExtractingDocx(false);
     }
   }
 
@@ -95,7 +147,62 @@ export function ImportReview() {
     <div className="space-y-5">
       <Card hover={false}>
         <CardContent className="space-y-4">
-          <StepHeading step={1} title="Paste quiz content" />
+          <StepHeading step={1} title="Upload or paste quiz content" />
+          <div className="rounded-xl border border-violet-200 bg-violet-50 p-4">
+            <input
+              id="host-slides-docx-import"
+              type="file"
+              accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              className="sr-only"
+              disabled={extractingDocx}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void importDocx(file);
+                event.target.value = "";
+              }}
+            />
+            <label
+              htmlFor="host-slides-docx-import"
+              className="btn inline-flex cursor-pointer items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-card hover:bg-brand-600"
+            >
+              <FaFileWord />
+              {extractingDocx ? "Extracting DOCX..." : "Upload Word Document"}
+            </label>
+            <p className="mt-2 text-xs text-violet-800">
+              Upload a .docx file to extract its text and parse it automatically.
+            </p>
+            {docxError ? (
+              <p className="mt-3 text-sm font-semibold text-red-700">
+                {docxError}
+              </p>
+            ) : null}
+            {docxPreview ? (
+              <dl className="mt-3 grid gap-2 rounded-lg border border-green-200 bg-green-50 p-3 text-sm sm:grid-cols-3">
+                <div>
+                  <dt className="font-bold text-green-900">Document</dt>
+                  <dd className="text-green-800">{docxPreview.fileName}</dd>
+                </div>
+                <div>
+                  <dt className="font-bold text-green-900">Extracted title</dt>
+                  <dd className="text-green-800">{docxPreview.title}</dd>
+                </div>
+                <div>
+                  <dt className="font-bold text-green-900">Quiz date</dt>
+                  <dd className="text-green-800">{docxPreview.quizDate}</dd>
+                </div>
+              </dl>
+            ) : null}
+            {docxExtractedText ? (
+              <details className="mt-3 rounded-lg border border-violet-200 bg-white p-3">
+                <summary className="cursor-pointer text-sm font-bold text-violet-900">
+                  Development: extracted DOCX text
+                </summary>
+                <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap text-xs text-slate-800">
+                  {docxExtractedText}
+                </pre>
+              </details>
+            ) : null}
+          </div>
           <textarea
             value={sourceText}
             onChange={(event) => updateSourceText(event.target.value)}
