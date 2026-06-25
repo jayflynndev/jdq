@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { mockHostSlideDecks } from "@/src/host-slides/mockDecks";
 import { buildHostSlideSequence } from "@/src/host-slides/slides";
-import { resolveHostShowScreens } from "@/src/host-slides/showScreens";
+import {
+  buildHostSlidesFromShowOrder,
+  getDefaultShowOrder,
+  resolveHostShowOrder,
+} from "@/src/host-slides/showOrder";
 import type {
   HostDeck,
   HostPresenterSlide,
@@ -31,6 +35,20 @@ function showScreenIndexes(
   return indexesOf(
     slides,
     (slide) => slide.type === "show-screen" && slide.screenType === screenType,
+  );
+}
+
+function showOrderSummary(deck: HostDeck): string[] {
+  return getDefaultShowOrder(deck.quizType, deck.rounds.length).map((block) =>
+    block.type === "round_intro"
+      ? `${block.type}:${block.config.roundNumber}`
+      : block.type === "question_section" || block.type === "answer_section"
+        ? `${block.type}:${block.config.roundNumbers.join(",")}`
+        : block.type === "pre_break" ||
+            block.type === "break_countdown" ||
+            block.type === "post_break"
+          ? `${block.type}:${block.config.breakNumber}`
+          : block.type,
   );
 }
 
@@ -64,6 +82,58 @@ function expectRoundSections(
 }
 
 describe("buildHostSlideSequence", () => {
+  it("defines the required default Thursday show order", () => {
+    const deck = getDeck("thursday");
+
+    expect(showOrderSummary(deck)).toEqual([
+      "pre_quiz",
+      "title_slide",
+      "round_intro:1",
+      "question_section:1",
+      "round_intro:2",
+      "question_section:2",
+      "round_intro:3",
+      "question_section:3",
+      "pre_break:1",
+      "break_countdown:1",
+      "post_break:1",
+      "round_intro:1",
+      "answer_section:1",
+      "round_intro:2",
+      "answer_section:2",
+      "round_intro:3",
+      "answer_section:3",
+      "round_reset",
+      "round_intro:4",
+      "question_section:4",
+      "round_intro:5",
+      "question_section:5",
+      "pre_break:2",
+      "break_countdown:2",
+      "post_break:2",
+      "round_intro:4",
+      "answer_section:4",
+      "round_intro:5",
+      "answer_section:5",
+      "tiebreak",
+      "quiz_end",
+    ]);
+  });
+
+  it("defines Saturday Dingbats inside the second break area", () => {
+    const deck = getDeck("saturday");
+    const summary = showOrderSummary(deck);
+    const secondBreakIndex = summary.indexOf("break_countdown:2");
+
+    expect(summary.slice(secondBreakIndex - 1, secondBreakIndex + 4)).toEqual([
+      "pre_break:2",
+      "break_countdown:2",
+      "dingbat_question",
+      "dingbat_answer",
+      "post_break:2",
+    ]);
+  });
+
   it("builds the section-based Thursday sequence", () => {
     const deck = getDeck("thursday");
     const slides = buildHostSlideSequence(deck);
@@ -141,7 +211,7 @@ describe("buildHostSlideSequence", () => {
   it("inserts first break show screens after Round 3 questions and before Round 1 answers", () => {
     const deck = getDeck("thursday");
     const slides = buildHostSlideSequence(deck);
-    const breakIndexes = [
+    const allBreakIndexes = [
       ...showScreenIndexes(slides, "pre_break"),
       ...showScreenIndexes(slides, "break_countdown"),
       ...showScreenIndexes(slides, "post_break"),
@@ -151,6 +221,9 @@ describe("buildHostSlideSequence", () => {
     );
     const round1AnswerStart = Math.min(
       ...questionIndexes(slides, deck.rounds[0], "answer"),
+    );
+    const breakIndexes = allBreakIndexes.filter(
+      (index) => index > round3QuestionEnd && index < round1AnswerStart,
     );
 
     expect(
@@ -193,15 +266,15 @@ describe("buildHostSlideSequence", () => {
     expect(saturdayBreakIndex).toBeLessThan(dingbatQuestionIndex);
   });
 
-  it("omits disabled first break show screens", () => {
+  it("omits disabled show-order blocks", () => {
     const deck = structuredClone(getDeck("thursday"));
-    const showScreens = resolveHostShowScreens(deck.quizType, deck.showScreens);
-    deck.showScreens = {
-      ...showScreens,
-      preBreak: { ...showScreens.preBreak, enabled: false },
-      breakCountdown: { ...showScreens.breakCountdown, enabled: false },
-      postBreak: { ...showScreens.postBreak, enabled: false },
-    };
+    deck.showOrder = resolveHostShowOrder(deck).map((block) =>
+      block.type === "pre_break" ||
+      block.type === "break_countdown" ||
+      block.type === "post_break"
+        ? { ...block, enabled: false }
+        : block,
+    );
     const slides = buildHostSlideSequence(deck);
 
     expect(showScreenIndexes(slides, "pre_break")).toHaveLength(0);
@@ -209,18 +282,18 @@ describe("buildHostSlideSequence", () => {
     expect(showScreenIndexes(slides, "post_break")).toHaveLength(0);
   });
 
-  it("omits disabled mid-quiz reset and quiz end screens", () => {
+  it("generates presenter output from show order", () => {
     const deck = structuredClone(getDeck("thursday"));
-    const showScreens = resolveHostShowScreens(deck.quizType, deck.showScreens);
-    deck.showScreens = {
-      ...showScreens,
-      midQuizReset: { ...showScreens.midQuizReset, enabled: false },
-      quizEnd: { ...showScreens.quizEnd, enabled: false },
-    };
-    const slides = buildHostSlideSequence(deck);
+    const showOrder = resolveHostShowOrder(deck).filter(
+      (block) =>
+        block.type === "title_slide" ||
+        block.id === "round-4-questions-intro" ||
+        (block.type === "question_section" &&
+          block.config.roundNumbers.includes(4)),
+    );
 
-    expect(showScreenIndexes(slides, "mid_quiz_reset")).toHaveLength(0);
-    expect(showScreenIndexes(slides, "quiz_end")).toHaveLength(0);
+    expect(buildHostSlidesFromShowOrder(deck, showOrder).map((slide) => slide.type))
+      .toEqual(["title", "round-intro", "question", "question"]);
   });
 
   it("adds the optional connection explanation after the Round 4 answers", () => {
@@ -274,13 +347,15 @@ describe("buildHostSlideSequence", () => {
       ),
     ).toBe(false);
 
-    const round1AnswerEnd = Math.max(
-      ...questionIndexes(slides, deck.rounds[0], "answer"),
+    const questionIndexesAll = deck.rounds.flatMap((round) =>
+      questionIndexes(slides, round, "question"),
     );
-    const round2QuestionStart = Math.min(
-      ...questionIndexes(slides, deck.rounds[1], "question"),
+    const answerIndexesAll = deck.rounds.flatMap((round) =>
+      questionIndexes(slides, round, "answer"),
     );
-    expect(round1AnswerEnd).toBeLessThan(round2QuestionStart);
+    expect(Math.max(...questionIndexesAll)).toBeLessThan(
+      Math.min(...answerIndexesAll),
+    );
   });
 
   it("omits tiebreak slides when a weekly deck has no tiebreak", () => {
@@ -298,13 +373,9 @@ describe("buildHostSlideSequence", () => {
 
   it("starts with the title slide when opening screens are disabled", () => {
     const deck = structuredClone(getDeck("thursday"));
-    const showScreens = resolveHostShowScreens(deck.quizType, deck.showScreens);
-    deck.showScreens = {
-      ...showScreens,
-      blank: { ...showScreens.blank, enabled: false },
-      preRoll: { ...showScreens.preRoll, enabled: false },
-      preQuiz: { ...showScreens.preQuiz, enabled: false },
-    };
+    deck.showOrder = resolveHostShowOrder(deck).map((block) =>
+      block.type === "pre_quiz" ? { ...block, enabled: false } : block,
+    );
     const slides = buildHostSlideSequence(deck);
 
     expect(slides[0].type).toBe("title");

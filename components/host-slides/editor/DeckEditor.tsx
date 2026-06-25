@@ -20,6 +20,8 @@ import {
   type HostDeck,
   type HostDingbatSet,
   type HostQuestion,
+  type HostShowBlock,
+  type HostShowOrder,
   type HostShowScreens,
   type HostShowScreenTextSettings,
 } from "@/src/host-slides/types";
@@ -35,6 +37,10 @@ import {
 import { getImageFileFromDataTransfer } from "@/src/host-slides/browserImageFiles";
 import type { QuizRecapPublishResult } from "@/src/host-slides/quizRecapPublishing";
 import { resolveHostShowScreens } from "@/src/host-slides/showScreens";
+import {
+  getDefaultShowOrder,
+  resolveHostShowOrder,
+} from "@/src/host-slides/showOrder";
 
 type DeckEditorProps = {
   deckId: string;
@@ -430,6 +436,35 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
     setSavedMessage(null);
   }
 
+  function updateShowOrderBlock(blockId: string, updates: Partial<HostShowBlock>) {
+    setDeck((current) => {
+      if (!current) return current;
+      const showOrder = resolveHostShowOrder(current);
+      return {
+        ...current,
+        showOrder: showOrder.map((block) =>
+          block.id === blockId ? ({ ...block, ...updates } as HostShowBlock) : block,
+        ),
+      };
+    });
+    setSavedMessage(null);
+  }
+
+  function resetShowOrder() {
+    setDeck((current) =>
+      current
+        ? {
+            ...current,
+            showOrder: getDefaultShowOrder(
+              current.quizType,
+              current.rounds.length,
+            ),
+          }
+        : current,
+    );
+    setSavedMessage(null);
+  }
+
   function updateRoundTitle(roundIndex: number, title: string) {
     setDeck((current) => {
       if (!current) return current;
@@ -598,6 +633,7 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
   }
 
   const showScreens = resolveHostShowScreens(deck.quizType, deck.showScreens);
+  const showOrder: HostShowOrder = resolveHostShowOrder(deck);
   const showScreenGroups: {
     heading: string;
     description: string;
@@ -705,6 +741,51 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
       </section>
 
       <ReadinessSummaryPanel deck={deck} />
+
+      <section className="qhl-card space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="qhl-kicker">Show Builder</div>
+            <h2 className="mt-1 text-xl font-bold text-white">Show Order</h2>
+            <p className="mt-1 text-sm text-violet-100/70">
+              The presenter runs these blocks in order. Reordering can come
+              later; V1 supports enable/disable and default reset.
+            </p>
+          </div>
+          <BrandButton variant="outline" onClick={resetShowOrder}>
+            Reset to Default Order
+          </BrandButton>
+        </div>
+
+        <ol className="space-y-2">
+          {showOrder.map((block, index) => (
+            <li
+              key={`${block.id}-${index}`}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-violet-200/15 bg-white/5 px-4 py-3"
+            >
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-200/70">
+                  {String(index + 1).padStart(2, "0")} · {block.type}
+                </p>
+                <p className="mt-1 font-semibold text-white">{block.label}</p>
+              </div>
+              <label className="inline-flex items-center gap-2 text-sm font-semibold text-violet-50">
+                <input
+                  type="checkbox"
+                  checked={block.enabled}
+                  onChange={(event) =>
+                    updateShowOrderBlock(block.id, {
+                      enabled: event.target.checked,
+                    })
+                  }
+                  className="h-4 w-4 accent-violet-500"
+                />
+                Enabled
+              </label>
+            </li>
+          ))}
+        </ol>
+      </section>
 
       <section className="qhl-card space-y-5">
         <div>

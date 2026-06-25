@@ -4,12 +4,16 @@ import type {
   HostDeckStatus,
   HostDingbatItems,
   HostShowScreens,
+  HostShowBlock,
+  HostShowBlockType,
+  HostShowOrder,
   HostQuestion,
   HostQuizType,
   HostRound,
 } from "@/src/host-slides/types";
 import { resolveHostSlideImageUrl } from "@/src/host-slides/supabaseImages";
 import { resolveHostShowScreens } from "@/src/host-slides/showScreens";
+import { getDefaultShowOrder } from "@/src/host-slides/showOrder";
 
 type HostSlideDeckRow = {
   id: string;
@@ -18,6 +22,7 @@ type HostSlideDeckRow = {
   quiz_date: string;
   status: HostDeckStatus;
   connection_explanation: string | null;
+  show_order: unknown | null;
   blank_enabled: boolean | null;
   blank_title_text: string | null;
   blank_body_text: string | null;
@@ -61,7 +66,7 @@ type HostSlideDeckRow = {
 };
 
 const HOST_SLIDE_DECK_COLUMNS =
-  "id,title,quiz_type,quiz_date,status,connection_explanation,blank_enabled,blank_title_text,blank_body_text,blank_ticker_text,pre_roll_enabled,pre_roll_title_text,pre_roll_body_text,pre_roll_ticker_text,pre_quiz_enabled,pre_quiz_title_text,pre_quiz_body_text,pre_quiz_how_to_play_text,pre_quiz_recap_text,pre_quiz_ticker_text,first_break_enabled,first_break_pre_title_text,first_break_pre_body_text,first_break_title_text,first_break_body_text,first_break_after_title_text,first_break_after_body_text,first_break_ticker_text,second_break_enabled,second_break_title_text,second_break_body_text,second_break_ticker_text,mid_quiz_overlay_enabled,mid_quiz_overlay_title_text,mid_quiz_overlay_body_text,mid_quiz_overlay_ticker_text,saturday_break_2_enabled,saturday_break_2_title_text,saturday_break_2_body_text,saturday_break_2_ticker_text,quiz_end_enabled,quiz_end_title_text,quiz_end_body_text,quiz_end_ticker_text,linked_quiz_recap_id,quiz_recap_last_published_at";
+  "id,title,quiz_type,quiz_date,status,connection_explanation,show_order,blank_enabled,blank_title_text,blank_body_text,blank_ticker_text,pre_roll_enabled,pre_roll_title_text,pre_roll_body_text,pre_roll_ticker_text,pre_quiz_enabled,pre_quiz_title_text,pre_quiz_body_text,pre_quiz_how_to_play_text,pre_quiz_recap_text,pre_quiz_ticker_text,first_break_enabled,first_break_pre_title_text,first_break_pre_body_text,first_break_title_text,first_break_body_text,first_break_after_title_text,first_break_after_body_text,first_break_ticker_text,second_break_enabled,second_break_title_text,second_break_body_text,second_break_ticker_text,mid_quiz_overlay_enabled,mid_quiz_overlay_title_text,mid_quiz_overlay_body_text,mid_quiz_overlay_ticker_text,saturday_break_2_enabled,saturday_break_2_title_text,saturday_break_2_body_text,saturday_break_2_ticker_text,quiz_end_enabled,quiz_end_title_text,quiz_end_body_text,quiz_end_ticker_text,linked_quiz_recap_id,quiz_recap_last_published_at";
 
 type HostSlideRoundRow = {
   id: string;
@@ -109,6 +114,125 @@ type HostSlideQuestionInsert = {
   image_storage_path: string | null;
   is_tiebreak: boolean;
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isShowBlockType(value: unknown): value is HostShowBlockType {
+  return (
+    value === "pre_quiz" ||
+    value === "title_slide" ||
+    value === "round_intro" ||
+    value === "question_section" ||
+    value === "answer_section" ||
+    value === "pre_break" ||
+    value === "break_countdown" ||
+    value === "post_break" ||
+    value === "round_reset" ||
+    value === "dingbat_question" ||
+    value === "dingbat_answer" ||
+    value === "tiebreak" ||
+    value === "quiz_end"
+  );
+}
+
+function numbersFromConfig(
+  config: Record<string, unknown>,
+  key: string,
+): number[] | null {
+  const value = config[key];
+  if (!Array.isArray(value)) return null;
+  const numbers = value.filter(
+    (item): item is number => Number.isInteger(item) && item > 0,
+  );
+  return numbers.length === value.length ? numbers : null;
+}
+
+function parseShowBlock(value: unknown): HostShowBlock | null {
+  if (!isRecord(value)) return null;
+  const { id, type, label, enabled } = value;
+  if (
+    typeof id !== "string" ||
+    !isShowBlockType(type) ||
+    typeof label !== "string" ||
+    typeof enabled !== "boolean"
+  ) {
+    return null;
+  }
+
+  if (
+    type === "pre_quiz" ||
+    type === "title_slide" ||
+    type === "round_reset" ||
+    type === "quiz_end" ||
+    type === "dingbat_question" ||
+    type === "dingbat_answer" ||
+    type === "tiebreak"
+  ) {
+    return { id, type, label, enabled };
+  }
+
+  if (!isRecord(value.config)) return null;
+
+  if (type === "round_intro") {
+    const roundNumber = value.config.roundNumber;
+    return typeof roundNumber === "number" &&
+      Number.isInteger(roundNumber) &&
+      roundNumber > 0
+      ? { id, type, label, enabled, config: { roundNumber } }
+      : null;
+  }
+
+  if (type === "question_section" || type === "answer_section") {
+    const roundNumbers = numbersFromConfig(value.config, "roundNumbers");
+    return roundNumbers
+      ? { id, type, label, enabled, config: { roundNumbers } }
+      : null;
+  }
+
+  const breakNumber = value.config.breakNumber;
+  const accessCodePart = value.config.accessCodePart;
+  const showTimerPlaceholder = value.config.showTimerPlaceholder;
+  if (breakNumber !== 1 && breakNumber !== 2) return null;
+  if (
+    accessCodePart !== undefined &&
+    accessCodePart !== "part1" &&
+    accessCodePart !== "part2"
+  ) {
+    return null;
+  }
+  if (
+    showTimerPlaceholder !== undefined &&
+    typeof showTimerPlaceholder !== "boolean"
+  ) {
+    return null;
+  }
+
+  return {
+    id,
+    type,
+    label,
+    enabled,
+    config: {
+      breakNumber,
+      ...(accessCodePart ? { accessCodePart } : {}),
+      ...(showTimerPlaceholder !== undefined ? { showTimerPlaceholder } : {}),
+    },
+  };
+}
+
+function parseShowOrder(
+  value: unknown,
+  quizType: HostQuizType,
+  roundCount: number,
+): HostShowOrder {
+  if (!Array.isArray(value)) return getDefaultShowOrder(quizType, roundCount);
+  const blocks = value.map(parseShowBlock);
+  return blocks.every((block): block is HostShowBlock => block !== null)
+    ? blocks
+    : getDefaultShowOrder(quizType, roundCount);
+}
 
 function mapShowScreens(deckRow: HostSlideDeckRow): HostShowScreens {
   const defaults = resolveHostShowScreens(deckRow.quiz_type, undefined);
@@ -274,6 +398,11 @@ function mapDeck(
     quizDate: deckRow.quiz_date,
     status: deckRow.status,
     showScreens: mapShowScreens(deckRow),
+    showOrder: parseShowOrder(
+      deckRow.show_order,
+      deckRow.quiz_type,
+      rounds.length,
+    ),
     ...(deckRow.connection_explanation
       ? { connectionExplanation: deckRow.connection_explanation }
       : {}),
@@ -435,6 +564,8 @@ async function insertDeckContents(deckId: string, deck: HostDeck): Promise<void>
 
 export async function createHostDeck(deck: HostDeck): Promise<HostDeck> {
   const showScreens = resolveHostShowScreens(deck.quizType, deck.showScreens);
+  const showOrder =
+    deck.showOrder ?? getDefaultShowOrder(deck.quizType, deck.rounds.length);
   const { data, error } = await supabase
     .from("host_slide_decks")
     .insert({
@@ -442,6 +573,7 @@ export async function createHostDeck(deck: HostDeck): Promise<HostDeck> {
       quiz_type: deck.quizType,
       quiz_date: deck.quizDate,
       status: "draft",
+      show_order: showOrder,
       blank_enabled: showScreens.blank.enabled,
       blank_title_text: showScreens.blank.titleText,
       blank_body_text: showScreens.blank.bodyText,
@@ -603,6 +735,8 @@ export async function listHostDecks(): Promise<HostDeck[]> {
 
 export async function updateHostDeck(deck: HostDeck): Promise<HostDeck> {
   const showScreens = resolveHostShowScreens(deck.quizType, deck.showScreens);
+  const showOrder =
+    deck.showOrder ?? getDefaultShowOrder(deck.quizType, deck.rounds.length);
   const { error: deckError } = await supabase
     .from("host_slide_decks")
     .update({
@@ -610,6 +744,7 @@ export async function updateHostDeck(deck: HostDeck): Promise<HostDeck> {
       quiz_type: deck.quizType,
       quiz_date: deck.quizDate,
       status: deck.status,
+      show_order: showOrder,
       blank_enabled: showScreens.blank.enabled,
       blank_title_text: showScreens.blank.titleText,
       blank_body_text: showScreens.blank.bodyText,

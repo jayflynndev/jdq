@@ -79,12 +79,79 @@ export interface HostQuizRecapAccessCodes {
   part2?: string;
 }
 
+export type HostShowBlockType =
+  | "pre_quiz"
+  | "title_slide"
+  | "round_intro"
+  | "question_section"
+  | "answer_section"
+  | "pre_break"
+  | "break_countdown"
+  | "post_break"
+  | "round_reset"
+  | "dingbat_question"
+  | "dingbat_answer"
+  | "tiebreak"
+  | "quiz_end";
+
+export interface HostRoundIntroBlockConfig {
+  roundNumber: number;
+}
+
+export interface HostSectionBlockConfig {
+  roundNumbers: number[];
+}
+
+export interface HostBreakBlockConfig {
+  breakNumber: 1 | 2;
+  accessCodePart?: "part1" | "part2";
+  showTimerPlaceholder?: boolean;
+}
+
+export type HostShowBlock =
+  | {
+      id: string;
+      type: "pre_quiz" | "title_slide" | "round_reset" | "quiz_end";
+      label: string;
+      enabled: boolean;
+    }
+  | {
+      id: string;
+      type: "round_intro";
+      label: string;
+      enabled: boolean;
+      config: HostRoundIntroBlockConfig;
+    }
+  | {
+      id: string;
+      type: "question_section" | "answer_section";
+      label: string;
+      enabled: boolean;
+      config: HostSectionBlockConfig;
+    }
+  | {
+      id: string;
+      type: "pre_break" | "break_countdown" | "post_break";
+      label: string;
+      enabled: boolean;
+      config: HostBreakBlockConfig;
+    }
+  | {
+      id: string;
+      type: "dingbat_question" | "dingbat_answer" | "tiebreak";
+      label: string;
+      enabled: boolean;
+    };
+
+export type HostShowOrder = HostShowBlock[];
+
 interface HostDeckBase {
   id: string;
   title: string;
   quizDate: string;
   status: HostDeckStatus;
   showScreens?: HostShowScreens;
+  showOrder?: HostShowOrder;
   quizRecapAccessCodes?: HostQuizRecapAccessCodes;
   connectionExplanation?: string;
   linkedQuizRecapId?: string;
