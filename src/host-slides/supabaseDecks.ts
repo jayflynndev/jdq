@@ -15,6 +15,7 @@ type HostSlideDeckRow = {
   quiz_type: HostQuizType;
   quiz_date: string;
   status: HostDeckStatus;
+  connection_explanation: string | null;
   linked_quiz_recap_id: string | null;
   quiz_recap_last_published_at: string | null;
 };
@@ -104,6 +105,9 @@ function mapDeck(
     quizType: deckRow.quiz_type,
     quizDate: deckRow.quiz_date,
     status: deckRow.status,
+    ...(deckRow.connection_explanation
+      ? { connectionExplanation: deckRow.connection_explanation }
+      : {}),
     ...(deckRow.linked_quiz_recap_id
       ? { linkedQuizRecapId: deckRow.linked_quiz_recap_id }
       : {}),
@@ -256,6 +260,7 @@ export async function createHostDeck(deck: HostDeck): Promise<HostDeck> {
       quiz_type: deck.quizType,
       quiz_date: deck.quizDate,
       status: "draft",
+      connection_explanation: deck.connectionExplanation ?? null,
     })
     .select("id")
     .single();
@@ -276,7 +281,7 @@ export async function loadHostDeck(deckId: string): Promise<HostDeck> {
   const { data: deckData, error: deckError } = await supabase
     .from("host_slide_decks")
     .select(
-      "id,title,quiz_type,quiz_date,status,linked_quiz_recap_id,quiz_recap_last_published_at",
+      "id,title,quiz_type,quiz_date,status,connection_explanation,linked_quiz_recap_id,quiz_recap_last_published_at",
     )
     .eq("id", deckId)
     .single();
@@ -322,7 +327,7 @@ export async function listHostDecks(): Promise<HostDeck[]> {
   const { data: deckData, error: deckError } = await supabase
     .from("host_slide_decks")
     .select(
-      "id,title,quiz_type,quiz_date,status,linked_quiz_recap_id,quiz_recap_last_published_at",
+      "id,title,quiz_type,quiz_date,status,connection_explanation,linked_quiz_recap_id,quiz_recap_last_published_at",
     )
     .order("quiz_date", { ascending: false });
   if (deckError) throw new Error(deckError.message);
@@ -372,6 +377,9 @@ export async function updateHostDeck(deck: HostDeck): Promise<HostDeck> {
       quiz_type: deck.quizType,
       quiz_date: deck.quizDate,
       status: deck.status,
+      connection_explanation: deck.connectionExplanation?.trim()
+        ? deck.connectionExplanation
+        : null,
     })
     .eq("id", deck.id);
   if (deckError) throw new Error(deckError.message);

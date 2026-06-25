@@ -7,6 +7,8 @@ export const mockHostSlideDecks: readonly HostDeck[] = [
     quizType: "thursday",
     quizDate: "2026-06-26",
     status: "ready",
+    connectionExplanation:
+      "The answers were all things you would find in an IKEA catalogue.",
     rounds: [
       {
         id: "thursday-round-1",

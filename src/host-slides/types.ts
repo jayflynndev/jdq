@@ -42,6 +42,7 @@ interface HostDeckBase {
   title: string;
   quizDate: string;
   status: HostDeckStatus;
+  connectionExplanation?: string;
   linkedQuizRecapId?: string;
   quizRecapLastPublishedAt?: string;
 }
@@ -74,6 +75,7 @@ export type HostPresenterSlide =
   | { id: string; type: "round-intro"; roundId: string }
   | { id: string; type: "question"; roundId: string; questionId: string }
   | { id: string; type: "answer"; roundId: string; questionId: string }
+  | { id: string; type: "connection-explanation" }
   | { id: string; type: "dingbat-question" }
   | { id: string; type: "dingbat-answer" }
   | { id: string; type: "tiebreaker-question" }

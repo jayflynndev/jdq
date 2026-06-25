@@ -57,11 +57,20 @@ export function SlideCanvas({
     ? "h-screen min-h-screen w-screen"
     : "aspect-video w-full rounded-xl border border-violet-300/30 shadow-2xl";
   const labelClass = isPresenter
-    ? "text-[clamp(1.25rem,1.7vw,2rem)]"
+    ? "text-[clamp(1.8rem,2.6vw,3.2rem)]"
     : "text-xs sm:text-sm lg:text-base";
   const titleClass = isPresenter
     ? "text-[clamp(2.5rem,6vw,7rem)]"
     : "text-2xl sm:text-3xl lg:text-4xl";
+  const roundIntroNumberClass = isPresenter
+    ? "text-[clamp(4rem,10vw,11rem)]"
+    : "text-4xl sm:text-5xl lg:text-6xl";
+  const roundIntroTitleClass = isPresenter
+    ? "text-[clamp(3.25rem,7vw,8rem)]"
+    : "text-3xl sm:text-4xl lg:text-5xl";
+  const questionNumberClass = isPresenter
+    ? "text-[clamp(1.9rem,3vw,3.6rem)]"
+    : "text-base sm:text-lg lg:text-2xl";
   const isDingbatSlide =
     slide.type === "dingbat-question" || slide.type === "dingbat-answer";
 
@@ -102,9 +111,11 @@ export function SlideCanvas({
   );
 
   const questionHeader = (roundHeading: string, questionHeading: string) => (
-    <header className="shrink-0 border-b border-violet-200/15 pb-[2vh]">
+    <header className="shrink-0 border-b border-violet-200/15 pb-[2.5vh]">
       {label(roundHeading)}
-      <p className="mt-[1vh] font-heading text-[clamp(1rem,1.8vw,2rem)] font-bold text-violet-100">
+      <p
+        className={`mt-[1vh] font-heading font-extrabold text-violet-100 ${questionNumberClass}`}
+      >
         {questionHeading}
       </p>
     </header>
@@ -154,11 +165,7 @@ export function SlideCanvas({
             <div className="h-full w-[68%] shrink-0">
               {pictureArea(question)}
             </div>
-            <div
-              className={`flex min-w-0 flex-1 items-center ${
-                isPresenter ? "pb-[20vh]" : "pb-[18%]"
-              }`}
-            >
+            <div className="flex min-w-0 flex-1 items-center">
               <h2
                 className={`font-heading font-extrabold leading-[1.1] text-white ${questionTextClass(
                   question.prompt,
@@ -169,7 +176,7 @@ export function SlideCanvas({
             </div>
           </div>
         ) : (
-          <div className="mt-[3%] flex min-h-0 flex-1 items-center overflow-hidden pb-[4%] pr-[15%]">
+          <div className="mt-[3%] flex min-h-0 flex-1 items-center overflow-hidden pb-[4%]">
             <h2
               className={`max-w-[1450px] text-balance font-heading font-extrabold leading-[1.12] text-white ${questionTextClass(
                 question.prompt,
@@ -200,11 +207,7 @@ export function SlideCanvas({
             <div className="h-full w-[68%] shrink-0">
               {pictureArea(question)}
             </div>
-            <div
-              className={`flex min-w-0 flex-1 flex-col justify-center ${
-                isPresenter ? "pb-[20vh]" : "pb-[18%]"
-              }`}
-            >
+            <div className="flex min-w-0 flex-1 flex-col justify-center">
               <p className="font-heading text-[clamp(0.9rem,1.6vw,1.8rem)] font-semibold leading-tight text-violet-100">
                 {question.prompt}
               </p>
@@ -217,7 +220,7 @@ export function SlideCanvas({
             </div>
           </div>
         ) : (
-          <div className="mt-[3%] flex min-h-0 flex-1 flex-col justify-center overflow-hidden pb-[4%] pr-[15%]">
+          <div className="mt-[3%] flex min-h-0 flex-1 flex-col justify-center overflow-hidden pb-[4%]">
             <p
               className={`max-w-[1450px] text-balance font-heading font-semibold leading-tight text-violet-100 ${answerQuestionClass(
                 question.prompt,
@@ -249,7 +252,7 @@ export function SlideCanvas({
         : createEmptyDingbatSet().items;
 
     return (
-      <div className="flex h-full flex-col pb-[4.5%]">
+      <div className="flex h-full flex-col pb-[9%]">
         <div className="flex h-[16%] shrink-0 items-center justify-center">
           <h2 className="text-center font-heading text-[clamp(1.5rem,3.5vw,4rem)] font-extrabold uppercase tracking-[0.12em] text-yellow-300">
             Dingbats
@@ -314,20 +317,37 @@ export function SlideCanvas({
       case "round-intro": {
         const round = findRound(deck, slide.roundId);
         return (
-          <div className="flex h-full flex-col justify-center">
-            {label(getRoundLabel(deck, round))}
+          <div className="flex h-full flex-col justify-center text-center">
+            <p
+              className={`${roundIntroNumberClass} font-black uppercase leading-none tracking-[0.08em] text-yellow-300`}
+            >
+              {getRoundLabel(deck, round).toUpperCase()}
+            </p>
             <h2
-              className={`mt-[3%] max-w-[1350px] font-heading font-extrabold leading-tight text-white ${titleClass}`}
+              className={`mx-auto mt-[4%] max-w-[1500px] font-heading font-extrabold leading-tight text-white ${roundIntroTitleClass}`}
             >
               {round.title}
             </h2>
           </div>
         );
       }
+      case "connection-explanation":
+        return (
+          <div className="flex h-full flex-col justify-center">
+            <p className="text-[clamp(1.6rem,2.4vw,3rem)] font-bold uppercase tracking-[0.2em] text-yellow-300">
+              Connection Explained
+            </p>
+            <h2 className="mt-[4%] max-w-[1500px] text-balance font-heading text-[clamp(2.2rem,4.8vw,6rem)] font-extrabold leading-[1.12] text-white">
+              {deck.connectionExplanation}
+            </h2>
+          </div>
+        );
       case "question": {
         const round = findRound(deck, slide.roundId);
         const question = findQuestion(round, slide.questionId);
-        const roundHeading = `${getRoundLabel(deck, round)} • ${round.title}`;
+        const roundHeading = [getRoundLabel(deck, round), round.title].join(
+          " • ",
+        );
         return renderQuestion(
           question,
           roundHeading,
@@ -337,7 +357,9 @@ export function SlideCanvas({
       case "answer": {
         const round = findRound(deck, slide.roundId);
         const question = findQuestion(round, slide.questionId);
-        const roundHeading = `${getRoundLabel(deck, round)} • ${round.title}`;
+        const roundHeading = [getRoundLabel(deck, round), round.title].join(
+          " • ",
+        );
         return renderAnswer(
           question,
           roundHeading,
@@ -369,15 +391,8 @@ export function SlideCanvas({
         {renderContent()}
       </div>
       {isDingbatSlide ? (
-        <>
-          <div className="absolute left-[2%] top-[2%] z-20 h-[17%] w-[20%] rounded-lg bg-black" />
-          <div className="absolute inset-x-0 bottom-0 z-20 h-[9%] border-t border-white/10 bg-black/80" />
-        </>
-      ) : (
-        <div className="absolute bottom-[5%] right-[5%] z-20 flex aspect-square h-[18%] items-center justify-center rounded-2xl border-2 border-dashed border-violet-200/25 bg-violet-950/15 p-2 text-center text-[clamp(0.55rem,0.8vw,0.95rem)] font-semibold uppercase tracking-[0.12em] text-violet-100/35">
-          Camera-safe area
-        </div>
-      )}
+        <div className="absolute inset-x-0 bottom-0 z-20 h-[9%] border-t border-white/10 bg-black/80" />
+      ) : null}
     </div>
   );
 }

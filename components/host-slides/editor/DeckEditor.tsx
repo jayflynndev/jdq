@@ -379,6 +379,13 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
     setSavedMessage(null);
   }
 
+  function updateConnectionExplanation(connectionExplanation: string) {
+    setDeck((current) =>
+      current ? { ...current, connectionExplanation } : current,
+    );
+    setSavedMessage(null);
+  }
+
   function updateRoundTitle(roundIndex: number, title: string) {
     setDeck((current) => {
       if (!current) return current;
@@ -648,6 +655,31 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
           onImageFileSelected={setPendingDingbatImage}
           onImageRemoved={clearPendingDingbatImage}
         />
+      ) : null}
+
+      {deck.quizType === "thursday" || deck.quizType === "saturday" ? (
+        <section className="qhl-card space-y-3">
+          <div>
+            <h2 className="text-lg font-bold text-white">
+              Connection Explanation
+            </h2>
+            <p className="mt-1 text-sm text-violet-100/70">
+              Optional presenter slide shown after the Round 4 answers. Leave
+              empty to skip it.
+            </p>
+          </div>
+          <label className="block">
+            <span className="qhl-label">Explanation text</span>
+            <textarea
+              value={deck.connectionExplanation ?? ""}
+              onChange={(event) =>
+                updateConnectionExplanation(event.target.value)
+              }
+              placeholder="Example: The answers were all IKEA ranges, hidden numbers, silent letters..."
+              className="qhl-input min-h-32"
+            />
+          </label>
+        </section>
       ) : null}
 
       {deck.tiebreaker ? (

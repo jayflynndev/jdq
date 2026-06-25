@@ -43,6 +43,7 @@ export function getPresenterSlideImageUrls(
       return tiebreakImageUrl(deck.tiebreaker);
     case "title":
     case "round-intro":
+    case "connection-explanation":
       return [];
   }
 }

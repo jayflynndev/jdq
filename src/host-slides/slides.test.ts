@@ -114,6 +114,34 @@ describe("buildHostSlideSequence", () => {
     expect(slides.at(-1)?.type).toBe("tiebreaker-answer");
   });
 
+  it("adds the optional connection explanation after the Round 4 answers", () => {
+    const deck = structuredClone(getDeck("thursday"));
+    deck.connectionExplanation = "The answers were all IKEA ranges.";
+    const slides = buildHostSlideSequence(deck);
+    const explanationIndex = slides.findIndex(
+      (slide) => slide.type === "connection-explanation",
+    );
+    const round4AnswerEnd = Math.max(
+      ...questionIndexes(slides, deck.rounds[3], "answer"),
+    );
+    const round5AnswerStart = Math.min(
+      ...questionIndexes(slides, deck.rounds[4], "answer"),
+    );
+
+    expect(explanationIndex).toBeGreaterThan(round4AnswerEnd);
+    expect(explanationIndex).toBeLessThan(round5AnswerStart);
+  });
+
+  it("omits the connection explanation slide when the text is blank", () => {
+    const deck = structuredClone(getDeck("thursday"));
+    deck.connectionExplanation = "   ";
+    const slides = buildHostSlideSequence(deck);
+
+    expect(
+      slides.some((slide) => slide.type === "connection-explanation"),
+    ).toBe(false);
+  });
+
   it("uses the simpler Patreon branch", () => {
     const deck = getDeck("patreon");
     const slides = buildHostSlideSequence(deck);

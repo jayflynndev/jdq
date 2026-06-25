@@ -40,6 +40,15 @@ function buildRoundAnswerSection(round: HostRound): HostPresenterSlide[] {
 
 function buildWeeklySequence(deck: WeeklyHostDeck): HostPresenterSlide[] {
   const [round1, round2, round3, round4, round5] = deck.rounds;
+  const connectionExplanation: HostPresenterSlide[] =
+    deck.connectionExplanation?.trim()
+      ? [
+          {
+            id: `${deck.id}-connection-explanation`,
+            type: "connection-explanation",
+          },
+        ]
+      : [];
   const secondBreak: HostPresenterSlide[] =
     deck.quizType === "saturday"
       ? [
@@ -69,6 +78,7 @@ function buildWeeklySequence(deck: WeeklyHostDeck): HostPresenterSlide[] {
     ...buildRoundSection(round5),
     ...secondBreak,
     ...buildRoundAnswerSection(round4),
+    ...connectionExplanation,
     ...buildRoundAnswerSection(round5),
     ...tiebreakSlides,
   ];
