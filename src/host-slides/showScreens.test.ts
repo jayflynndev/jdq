@@ -16,49 +16,50 @@ function getDeck(quizType: HostDeck["quizType"]): HostDeck {
 }
 
 describe("Host Slides show screen settings", () => {
-  it("defaults Thursday decks to QuizHub and recap messaging", () => {
+  it("defaults Thursday decks to Jay's Streamlabs scene flow", () => {
     const settings = getDefaultShowScreens("thursday");
 
+    expect(settings.blank.enabled).toBe(false);
+    expect(settings.preRoll.enabled).toBe(false);
     expect(settings.preQuiz.enabled).toBe(true);
-    expect(settings.preQuiz.recapText.toLowerCase()).toContain("quizhub.co.uk");
-    expect(settings.preQuiz.recapText.toLowerCase()).toContain("quiz recap");
-    expect(settings.preQuiz.tickerText.toLowerCase()).toContain("quizhub.co.uk");
-    expect(settings.firstBreak.enabled).toBe(true);
-    expect(settings.firstBreak.titleText).toContain("Rounds 1-3");
-    expect(settings.secondBreak.enabled).toBe(true);
-    expect(settings.secondBreak.titleText).toContain("Rounds 4-5");
+    expect(settings.preQuiz.bodyText.toLowerCase()).toContain("quizhub.co.uk");
+    expect(settings.preQuiz.bodyText.toLowerCase()).toContain("quiz recap");
+    expect(settings.preBreak.enabled).toBe(true);
+    expect(settings.breakCountdown.enabled).toBe(true);
+    expect(settings.postBreak.enabled).toBe(true);
+    expect(settings.midQuizReset.enabled).toBe(true);
+    expect(settings.saturdayBreak2.enabled).toBe(false);
+    expect(settings.quizEnd.enabled).toBe(true);
   });
 
-  it("defaults Saturday decks to QuizHub and recap messaging", () => {
+  it("defaults Saturday decks with Saturday Break 2 enabled", () => {
     const settings = getDefaultShowScreens("saturday");
 
     expect(settings.preQuiz.enabled).toBe(true);
-    expect(settings.preQuiz.recapText.toLowerCase()).toContain("quizhub.co.uk");
-    expect(settings.preQuiz.recapText.toLowerCase()).toContain("quiz recap");
-    expect(settings.preQuiz.tickerText.toLowerCase()).toContain("quizhub.co.uk");
-    expect(settings.firstBreak.enabled).toBe(true);
-    expect(settings.secondBreak.enabled).toBe(false);
+    expect(settings.preBreak.enabled).toBe(true);
+    expect(settings.breakCountdown.enabled).toBe(true);
+    expect(settings.postBreak.enabled).toBe(true);
+    expect(settings.midQuizReset.enabled).toBe(true);
+    expect(settings.saturdayBreak2.enabled).toBe(true);
+    expect(settings.saturdayBreak2.bodyText).toContain("Part 2");
+    expect(settings.quizEnd.enabled).toBe(true);
   });
 
-  it("defaults Patreon decks without Quiz Recap wording", () => {
+  it("defaults Patreon decks without QuizHub or recap wording", () => {
     const settings = getDefaultShowScreens("patreon");
-    const combinedCopy = [
-      settings.preQuiz.howToPlayText,
-      settings.preQuiz.recapText,
-      settings.preQuiz.tickerText,
-      settings.firstBreak.titleText,
-      settings.firstBreak.bodyText,
-      settings.firstBreak.tickerText,
-      settings.secondBreak.titleText,
-      settings.secondBreak.bodyText,
-      settings.secondBreak.tickerText,
-    ]
+    const combinedCopy = Object.values(settings)
+      .flatMap((screen) => [
+        screen.titleText,
+        screen.bodyText,
+        screen.tickerText,
+      ])
       .join(" ")
       .toLowerCase();
 
     expect(settings.preQuiz.enabled).toBe(true);
     expect(combinedCopy).toContain("patreon");
     expect(combinedCopy).not.toContain("quiz recap");
+    expect(combinedCopy).not.toContain("quizhub");
   });
 
   it("preserves explicit overrides", () => {
@@ -68,27 +69,33 @@ describe("Host Slides show screen settings", () => {
       preQuiz: {
         ...defaults.preQuiz,
         enabled: false,
-        howToPlayText: "Custom instructions",
-        recapText: "",
+        titleText: "Custom pre-quiz",
+        bodyText: "Custom instructions",
         tickerText: "",
       },
-      firstBreak: {
-        ...defaults.firstBreak,
+      breakCountdown: {
+        ...defaults.breakCountdown,
         titleText: "Custom break",
+      },
+      midQuizReset: {
+        ...defaults.midQuizReset,
+        enabled: false,
+        titleText: "Custom reset",
       },
     });
 
     expect(settings.preQuiz.enabled).toBe(false);
-    expect(settings.preQuiz.howToPlayText).toBe("Custom instructions");
-    expect(settings.preQuiz.recapText).toBe("");
-    expect(settings.firstBreak.titleText).toBe("Custom break");
+    expect(settings.preQuiz.bodyText).toBe("Custom instructions");
+    expect(settings.breakCountdown.titleText).toBe("Custom break");
+    expect(settings.midQuizReset.enabled).toBe(false);
+    expect(settings.midQuizReset.titleText).toBe("Custom reset");
   });
 
   it("uses the Part 1 access code for the first break", () => {
     const deck = getDeck("thursday");
     deck.quizRecapAccessCodes = { part1: "ROUND123", part2: "FINAL456" };
 
-    expect(getBreakAccessCode(deck, "first")).toEqual({
+    expect(getBreakAccessCode(deck, "part1")).toEqual({
       shouldShow: true,
       part: "Part 1",
       code: "ROUND123",
@@ -99,7 +106,7 @@ describe("Host Slides show screen settings", () => {
     const deck = getDeck("saturday");
     deck.quizRecapAccessCodes = { part1: "ROUND123", part2: "FINAL456" };
 
-    expect(getBreakAccessCode(deck, "second")).toEqual({
+    expect(getBreakAccessCode(deck, "part2")).toEqual({
       shouldShow: true,
       part: "Part 2",
       code: "FINAL456",
@@ -110,7 +117,7 @@ describe("Host Slides show screen settings", () => {
     const deck = getDeck("thursday");
     deck.quizRecapAccessCodes = { part1: "   " };
 
-    expect(getBreakAccessCode(deck, "first")).toEqual({
+    expect(getBreakAccessCode(deck, "part1")).toEqual({
       shouldShow: true,
       part: "Part 1",
       code: null,
@@ -121,6 +128,6 @@ describe("Host Slides show screen settings", () => {
     const deck = getDeck("patreon");
     deck.quizRecapAccessCodes = { part1: "SHOULD-NOT-SHOW" };
 
-    expect(getBreakAccessCode(deck, "first")).toEqual({ shouldShow: false });
+    expect(getBreakAccessCode(deck, "part1")).toEqual({ shouldShow: false });
   });
 });

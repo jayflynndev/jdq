@@ -17,11 +17,11 @@ import { ReadinessSummaryPanel } from "@/components/host-slides/editor/Readiness
 import { PresenterGateButton } from "@/components/host-slides/PresenterGateButton";
 import {
   createEmptyDingbatSet,
-  type HostBreakScreenSettings,
   type HostDeck,
   type HostDingbatSet,
-  type HostPreQuizScreenSettings,
   type HostQuestion,
+  type HostShowScreens,
+  type HostShowScreenTextSettings,
 } from "@/src/host-slides/types";
 import {
   loadHostDeck,
@@ -406,8 +406,9 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
     setSavedMessage(null);
   }
 
-  function updatePreQuizScreen(
-    updates: Partial<HostPreQuizScreenSettings>,
+  function updateShowScreen<TKey extends keyof HostShowScreens>(
+    screenKey: TKey,
+    updates: Partial<HostShowScreens[TKey]>,
   ) {
     setDeck((current) => {
       if (!current) return current;
@@ -419,32 +420,8 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
         ...current,
         showScreens: {
           ...showScreens,
-          preQuiz: {
-            ...showScreens.preQuiz,
-            ...updates,
-          },
-        },
-      };
-    });
-    setSavedMessage(null);
-  }
-
-  function updateBreakScreen(
-    breakKey: "firstBreak" | "secondBreak",
-    updates: Partial<HostBreakScreenSettings>,
-  ) {
-    setDeck((current) => {
-      if (!current) return current;
-      const showScreens = resolveHostShowScreens(
-        current.quizType,
-        current.showScreens,
-      );
-      return {
-        ...current,
-        showScreens: {
-          ...showScreens,
-          [breakKey]: {
-            ...showScreens[breakKey],
+          [screenKey]: {
+            ...showScreens[screenKey],
             ...updates,
           },
         },
@@ -621,6 +598,62 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
   }
 
   const showScreens = resolveHostShowScreens(deck.quizType, deck.showScreens);
+  const showScreenGroups: {
+    heading: string;
+    description: string;
+    screens: {
+      key: keyof HostShowScreens;
+      label: string;
+      canDisable: boolean;
+    }[];
+  }[] = [
+    {
+      heading: "Opening",
+      description:
+        "Holding screens before the quiz title/date slide. Streamlabs handles scene switching and camera overlays.",
+      screens: [
+        { key: "blank", label: "Blank", canDisable: true },
+        { key: "preRoll", label: "Pre-Roll", canDisable: true },
+        { key: "preQuiz", label: "Pre-Quiz", canDisable: true },
+      ],
+    },
+    {
+      heading: "First Break",
+      description:
+        "Slides after Round 3 questions and before the Round 1-3 answers.",
+      screens: [
+        { key: "preBreak", label: "Pre-Break", canDisable: true },
+        {
+          key: "breakCountdown",
+          label: "Break Countdown",
+          canDisable: true,
+        },
+        { key: "postBreak", label: "Post-Break", canDisable: true },
+      ],
+    },
+    {
+      heading: "Mid Quiz",
+      description:
+        "Reset slide after Round 3 answers and the optional Saturday second break.",
+      screens: [
+        {
+          key: "midQuizReset",
+          label: "Mid-Quiz Reset / Round 4 Setup",
+          canDisable: true,
+        },
+        {
+          key: "saturdayBreak2",
+          label: "Saturday Break 2",
+          canDisable: true,
+        },
+      ],
+    },
+    {
+      heading: "Ending",
+      description: "Final holding screen after the quiz flow completes.",
+      screens: [{ key: "quizEnd", label: "Quiz End", canDisable: true }],
+    },
+  ];
 
   return (
     <main className="qhl-shell space-y-5">
@@ -673,135 +706,96 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
 
       <ReadinessSummaryPanel deck={deck} />
 
-      <section className="qhl-card space-y-4">
+      <section className="qhl-card space-y-5">
         <div>
           <div className="qhl-kicker">Show Screens</div>
           <h2 className="mt-1 text-xl font-bold text-white">
-            Pre-Quiz Screen
+            Streamlabs Scene Slides
           </h2>
           <p className="mt-1 text-sm text-violet-100/70">
-            Audience-facing holding screen for the start of the stream.
-            Streamlabs handles the camera and countdown timer overlays.
+            Presenter slides for non-quiz moments. Streamlabs still handles
+            camera, music, countdown timers, and scene switching.
           </p>
         </div>
 
-        <label className="inline-flex items-center gap-3 text-sm font-semibold text-violet-50">
-          <input
-            type="checkbox"
-            checked={showScreens.preQuiz.enabled}
-            onChange={(event) =>
-              updatePreQuizScreen({ enabled: event.target.checked })
-            }
-            className="h-4 w-4 accent-violet-500"
-          />
-          Enable pre-quiz screen
-        </label>
-
-        <div className="grid gap-4 lg:grid-cols-3">
-          <label className="block">
-            <span className="qhl-label">How to play text</span>
-            <textarea
-              value={showScreens.preQuiz.howToPlayText}
-              onChange={(event) =>
-                updatePreQuizScreen({ howToPlayText: event.target.value })
-              }
-              className="qhl-input min-h-32"
-            />
-          </label>
-          <label className="block">
-            <span className="qhl-label">Recap / website text</span>
-            <textarea
-              value={showScreens.preQuiz.recapText}
-              onChange={(event) =>
-                updatePreQuizScreen({ recapText: event.target.value })
-              }
-              className="qhl-input min-h-32"
-            />
-          </label>
-          <label className="block">
-            <span className="qhl-label">Ticker / socials text</span>
-            <textarea
-              value={showScreens.preQuiz.tickerText}
-              onChange={(event) =>
-                updatePreQuizScreen({ tickerText: event.target.value })
-              }
-              className="qhl-input min-h-32"
-            />
-          </label>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          {(["firstBreak", "secondBreak"] as const).map((breakKey) => {
-            const settings = showScreens[breakKey];
-            const label =
-              breakKey === "firstBreak" ? "First Break" : "Second Break";
-
-            return (
-              <div
-                key={breakKey}
-                className="space-y-4 rounded-xl border border-violet-200/15 bg-white/5 p-4"
-              >
-                <div>
-                  <h3 className="text-lg font-bold text-white">{label}</h3>
-                  <p className="mt-1 text-sm text-violet-100/70">
-                    {breakKey === "firstBreak"
-                      ? "Shown after Round 3 questions, before Round 1 answers."
-                      : "Shown after Round 5 questions, before Round 4 answers. For Saturday it appears before Dingbats when enabled."}
-                  </p>
-                </div>
-                <label className="inline-flex items-center gap-3 text-sm font-semibold text-violet-50">
-                  <input
-                    type="checkbox"
-                    checked={settings.enabled}
-                    onChange={(event) =>
-                      updateBreakScreen(breakKey, {
-                        enabled: event.target.checked,
-                      })
-                    }
-                    className="h-4 w-4 accent-violet-500"
-                  />
-                  Enable {label.toLowerCase()} screen
-                </label>
-                <label className="block">
-                  <span className="qhl-label">{label} title</span>
-                  <input
-                    className="qhl-input"
-                    value={settings.titleText}
-                    onChange={(event) =>
-                      updateBreakScreen(breakKey, {
-                        titleText: event.target.value,
-                      })
-                    }
-                  />
-                </label>
-                <label className="block">
-                  <span className="qhl-label">{label} body text</span>
-                  <textarea
-                    className="qhl-input min-h-28"
-                    value={settings.bodyText}
-                    onChange={(event) =>
-                      updateBreakScreen(breakKey, {
-                        bodyText: event.target.value,
-                      })
-                    }
-                  />
-                </label>
-                <label className="block">
-                  <span className="qhl-label">{label} ticker text</span>
-                  <textarea
-                    className="qhl-input min-h-20"
-                    value={settings.tickerText}
-                    onChange={(event) =>
-                      updateBreakScreen(breakKey, {
-                        tickerText: event.target.value,
-                      })
-                    }
-                  />
-                </label>
-              </div>
-            );
-          })}
-        </div>
+        {showScreenGroups.map((group) => (
+          <div key={group.heading} className="space-y-3">
+            <div>
+              <h3 className="text-lg font-bold text-white">{group.heading}</h3>
+              <p className="mt-1 text-sm text-violet-100/70">
+                {group.description}
+              </p>
+            </div>
+            <div className="grid gap-4 xl:grid-cols-3">
+              {group.screens.map((screen) => {
+                const settings = showScreens[
+                  screen.key
+                ] as HostShowScreenTextSettings;
+                return (
+                  <div
+                    key={screen.key}
+                    className="space-y-4 rounded-xl border border-violet-200/15 bg-white/5 p-4"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <h4 className="font-bold text-white">{screen.label}</h4>
+                      {screen.canDisable ? (
+                        <label className="inline-flex items-center gap-2 text-xs font-semibold text-violet-50">
+                          <input
+                            type="checkbox"
+                            checked={settings.enabled}
+                            onChange={(event) =>
+                              updateShowScreen(screen.key, {
+                                enabled: event.target.checked,
+                              })
+                            }
+                            className="h-4 w-4 accent-violet-500"
+                          />
+                          Enabled
+                        </label>
+                      ) : null}
+                    </div>
+                    <label className="block">
+                      <span className="qhl-label">Title</span>
+                      <input
+                        className="qhl-input"
+                        value={settings.titleText}
+                        onChange={(event) =>
+                          updateShowScreen(screen.key, {
+                            titleText: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="qhl-label">Body</span>
+                      <textarea
+                        className="qhl-input min-h-24"
+                        value={settings.bodyText}
+                        onChange={(event) =>
+                          updateShowScreen(screen.key, {
+                            bodyText: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="qhl-label">Ticker / lower-third</span>
+                      <textarea
+                        className="qhl-input min-h-16"
+                        value={settings.tickerText}
+                        onChange={(event) =>
+                          updateShowScreen(screen.key, {
+                            tickerText: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </section>
 
       <section className="space-y-4">

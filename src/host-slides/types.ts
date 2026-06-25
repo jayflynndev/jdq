@@ -39,22 +39,39 @@ export interface HostDingbatSet {
 
 export interface HostPreQuizScreenSettings {
   enabled: boolean;
-  howToPlayText: string;
-  recapText: string;
+  titleText: string;
+  bodyText: string;
   tickerText: string;
 }
 
-export interface HostBreakScreenSettings {
+export interface HostShowScreenTextSettings {
   enabled: boolean;
   titleText: string;
   bodyText: string;
   tickerText: string;
 }
 
+export type HostShowScreenType =
+  | "blank"
+  | "pre_roll"
+  | "pre_quiz"
+  | "pre_break"
+  | "break_countdown"
+  | "post_break"
+  | "mid_quiz_reset"
+  | "saturday_break_2"
+  | "quiz_end";
+
 export interface HostShowScreens {
+  blank: HostShowScreenTextSettings;
+  preRoll: HostShowScreenTextSettings;
   preQuiz: HostPreQuizScreenSettings;
-  firstBreak: HostBreakScreenSettings;
-  secondBreak: HostBreakScreenSettings;
+  preBreak: HostShowScreenTextSettings;
+  breakCountdown: HostShowScreenTextSettings;
+  postBreak: HostShowScreenTextSettings;
+  midQuizReset: HostShowScreenTextSettings;
+  saturdayBreak2: HostShowScreenTextSettings;
+  quizEnd: HostShowScreenTextSettings;
 }
 
 export interface HostQuizRecapAccessCodes {
@@ -98,8 +115,12 @@ export interface PatreonHostDeck extends HostDeckBase {
 export type HostDeck = WeeklyHostDeck | PatreonHostDeck;
 
 export type HostPresenterSlide =
-  | { id: string; type: "pre-quiz" }
-  | { id: string; type: "break"; breakType: "first" | "second" }
+  | {
+      id: string;
+      type: "show-screen";
+      screenType: HostShowScreenType;
+      accessCodePart?: "part1" | "part2";
+    }
   | { id: string; type: "title" }
   | { id: string; type: "round-intro"; roundId: string }
   | { id: string; type: "question"; roundId: string; questionId: string }

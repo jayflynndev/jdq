@@ -45,17 +45,97 @@ function buildWeeklySequence(deck: WeeklyHostDeck): HostPresenterSlide[] {
     deck.quizType,
     deck.showScreens,
   );
-  const preQuizSlides: HostPresenterSlide[] = showScreens.preQuiz.enabled
-    ? [{ id: `${deck.id}-pre-quiz`, type: "pre-quiz" }]
-    : [];
-  const firstBreakSlides: HostPresenterSlide[] =
-    showScreens.firstBreak.enabled
-      ? [{ id: `${deck.id}-first-break`, type: "break", breakType: "first" }]
-      : [];
+  const openingShowScreens: HostPresenterSlide[] = [
+    ...(showScreens.blank.enabled
+      ? [
+          {
+            id: `${deck.id}-blank`,
+            type: "show-screen",
+            screenType: "blank",
+          } as const,
+        ]
+      : []),
+    ...(showScreens.preRoll.enabled
+      ? [
+          {
+            id: `${deck.id}-pre-roll`,
+            type: "show-screen",
+            screenType: "pre_roll",
+          } as const,
+        ]
+      : []),
+    ...(showScreens.preQuiz.enabled
+      ? [
+          {
+            id: `${deck.id}-pre-quiz`,
+            type: "show-screen",
+            screenType: "pre_quiz",
+          } as const,
+        ]
+      : []),
+  ];
+  const firstBreakSlides: HostPresenterSlide[] = [
+    ...(showScreens.preBreak.enabled
+      ? [
+          {
+            id: `${deck.id}-pre-break`,
+            type: "show-screen",
+            screenType: "pre_break",
+            accessCodePart: "part1",
+          } as const,
+        ]
+      : []),
+    ...(showScreens.breakCountdown.enabled
+      ? [
+          {
+            id: `${deck.id}-break-countdown`,
+            type: "show-screen",
+            screenType: "break_countdown",
+            accessCodePart: "part1",
+          } as const,
+        ]
+      : []),
+    ...(showScreens.postBreak.enabled
+      ? [
+          {
+            id: `${deck.id}-post-break`,
+            type: "show-screen",
+            screenType: "post_break",
+            accessCodePart: "part1",
+          } as const,
+        ]
+      : []),
+  ];
   const secondBreakSlides: HostPresenterSlide[] =
-    showScreens.secondBreak.enabled
-      ? [{ id: `${deck.id}-second-break`, type: "break", breakType: "second" }]
+    deck.quizType === "saturday" && showScreens.saturdayBreak2.enabled
+      ? [
+          {
+            id: `${deck.id}-saturday-break-2`,
+            type: "show-screen",
+            screenType: "saturday_break_2",
+            accessCodePart: "part2",
+          },
+        ]
       : [];
+  const midQuizResetSlides: HostPresenterSlide[] =
+    showScreens.midQuizReset.enabled
+      ? [
+          {
+            id: `${deck.id}-mid-quiz-reset`,
+            type: "show-screen",
+            screenType: "mid_quiz_reset",
+          },
+        ]
+      : [];
+  const quizEndSlides: HostPresenterSlide[] = showScreens.quizEnd.enabled
+    ? [
+        {
+          id: `${deck.id}-quiz-end`,
+          type: "show-screen",
+          screenType: "quiz_end",
+        },
+      ]
+    : [];
   const connectionExplanation: HostPresenterSlide[] =
     deck.connectionExplanation?.trim()
       ? [
@@ -83,7 +163,7 @@ function buildWeeklySequence(deck: WeeklyHostDeck): HostPresenterSlide[] {
     : [];
 
   return [
-    ...preQuizSlides,
+    ...openingShowScreens,
     { id: `${deck.id}-title`, type: "title" },
     ...buildRoundSection(round1),
     ...buildRoundSection(round2),
@@ -92,6 +172,7 @@ function buildWeeklySequence(deck: WeeklyHostDeck): HostPresenterSlide[] {
     ...buildRoundAnswerSection(round1),
     ...buildRoundAnswerSection(round2),
     ...buildRoundAnswerSection(round3),
+    ...midQuizResetSlides,
     ...buildRoundSection(round4),
     ...buildRoundSection(round5),
     ...secondBreakSlides,
@@ -100,6 +181,7 @@ function buildWeeklySequence(deck: WeeklyHostDeck): HostPresenterSlide[] {
     ...connectionExplanation,
     ...buildRoundAnswerSection(round5),
     ...tiebreakSlides,
+    ...quizEndSlides,
   ];
 }
 
@@ -107,25 +189,31 @@ function buildPatreonSequence(deck: PatreonHostDeck): HostPresenterSlide[] {
   const showScreens = resolveHostShowScreens(deck.quizType, deck.showScreens);
   const slides: HostPresenterSlide[] = [
     ...(showScreens.preQuiz.enabled
-      ? [{ id: `${deck.id}-pre-quiz`, type: "pre-quiz" } as const]
+      ? [
+          {
+            id: `${deck.id}-pre-quiz`,
+            type: "show-screen",
+            screenType: "pre_quiz",
+          } as const,
+        ]
       : []),
     { id: `${deck.id}-title`, type: "title" },
   ];
 
   deck.rounds.forEach((round, roundIndex) => {
     slides.push(...buildRoundSection(round));
-    if (showScreens.firstBreak.enabled && roundIndex === 2) {
+    if (showScreens.breakCountdown.enabled && roundIndex === 2) {
       slides.push({
         id: `${deck.id}-first-break`,
-        type: "break",
-        breakType: "first",
+        type: "show-screen",
+        screenType: "break_countdown",
       });
     }
-    if (showScreens.secondBreak.enabled && roundIndex === 4) {
+    if (showScreens.saturdayBreak2.enabled && roundIndex === 4) {
       slides.push({
         id: `${deck.id}-second-break`,
-        type: "break",
-        breakType: "second",
+        type: "show-screen",
+        screenType: "saturday_break_2",
       });
     }
     slides.push(...buildRoundAnswerSection(round));

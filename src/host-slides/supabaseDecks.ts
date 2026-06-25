@@ -18,21 +18,50 @@ type HostSlideDeckRow = {
   quiz_date: string;
   status: HostDeckStatus;
   connection_explanation: string | null;
+  blank_enabled: boolean | null;
+  blank_title_text: string | null;
+  blank_body_text: string | null;
+  blank_ticker_text: string | null;
+  pre_roll_enabled: boolean | null;
+  pre_roll_title_text: string | null;
+  pre_roll_body_text: string | null;
+  pre_roll_ticker_text: string | null;
   pre_quiz_enabled: boolean | null;
+  pre_quiz_title_text: string | null;
+  pre_quiz_body_text: string | null;
   pre_quiz_how_to_play_text: string | null;
   pre_quiz_recap_text: string | null;
   pre_quiz_ticker_text: string | null;
   first_break_enabled: boolean | null;
+  first_break_pre_title_text: string | null;
+  first_break_pre_body_text: string | null;
   first_break_title_text: string | null;
   first_break_body_text: string | null;
+  first_break_after_title_text: string | null;
+  first_break_after_body_text: string | null;
   first_break_ticker_text: string | null;
   second_break_enabled: boolean | null;
   second_break_title_text: string | null;
   second_break_body_text: string | null;
   second_break_ticker_text: string | null;
+  mid_quiz_overlay_enabled: boolean | null;
+  mid_quiz_overlay_title_text: string | null;
+  mid_quiz_overlay_body_text: string | null;
+  mid_quiz_overlay_ticker_text: string | null;
+  saturday_break_2_enabled: boolean | null;
+  saturday_break_2_title_text: string | null;
+  saturday_break_2_body_text: string | null;
+  saturday_break_2_ticker_text: string | null;
+  quiz_end_enabled: boolean | null;
+  quiz_end_title_text: string | null;
+  quiz_end_body_text: string | null;
+  quiz_end_ticker_text: string | null;
   linked_quiz_recap_id: string | null;
   quiz_recap_last_published_at: string | null;
 };
+
+const HOST_SLIDE_DECK_COLUMNS =
+  "id,title,quiz_type,quiz_date,status,connection_explanation,blank_enabled,blank_title_text,blank_body_text,blank_ticker_text,pre_roll_enabled,pre_roll_title_text,pre_roll_body_text,pre_roll_ticker_text,pre_quiz_enabled,pre_quiz_title_text,pre_quiz_body_text,pre_quiz_how_to_play_text,pre_quiz_recap_text,pre_quiz_ticker_text,first_break_enabled,first_break_pre_title_text,first_break_pre_body_text,first_break_title_text,first_break_body_text,first_break_after_title_text,first_break_after_body_text,first_break_ticker_text,second_break_enabled,second_break_title_text,second_break_body_text,second_break_ticker_text,mid_quiz_overlay_enabled,mid_quiz_overlay_title_text,mid_quiz_overlay_body_text,mid_quiz_overlay_ticker_text,saturday_break_2_enabled,saturday_break_2_title_text,saturday_break_2_body_text,saturday_break_2_ticker_text,quiz_end_enabled,quiz_end_title_text,quiz_end_body_text,quiz_end_ticker_text,linked_quiz_recap_id,quiz_recap_last_published_at";
 
 type HostSlideRoundRow = {
   id: string;
@@ -83,31 +112,98 @@ type HostSlideQuestionInsert = {
 
 function mapShowScreens(deckRow: HostSlideDeckRow): HostShowScreens {
   const defaults = resolveHostShowScreens(deckRow.quiz_type, undefined);
+  const legacyPreQuizBody = [
+    deckRow.pre_quiz_how_to_play_text,
+    deckRow.pre_quiz_recap_text,
+  ]
+    .filter((text): text is string => Boolean(text?.trim()))
+    .join("\n\n");
   return {
+    blank: {
+      enabled: deckRow.blank_enabled ?? defaults.blank.enabled,
+      titleText: deckRow.blank_title_text ?? defaults.blank.titleText,
+      bodyText: deckRow.blank_body_text ?? defaults.blank.bodyText,
+      tickerText: deckRow.blank_ticker_text ?? defaults.blank.tickerText,
+    },
+    preRoll: {
+      enabled: deckRow.pre_roll_enabled ?? defaults.preRoll.enabled,
+      titleText: deckRow.pre_roll_title_text ?? defaults.preRoll.titleText,
+      bodyText: deckRow.pre_roll_body_text ?? defaults.preRoll.bodyText,
+      tickerText: deckRow.pre_roll_ticker_text ?? defaults.preRoll.tickerText,
+    },
     preQuiz: {
       enabled: deckRow.pre_quiz_enabled ?? defaults.preQuiz.enabled,
-      howToPlayText:
-        deckRow.pre_quiz_how_to_play_text ?? defaults.preQuiz.howToPlayText,
-      recapText: deckRow.pre_quiz_recap_text ?? defaults.preQuiz.recapText,
+      titleText: deckRow.pre_quiz_title_text ?? defaults.preQuiz.titleText,
+      bodyText:
+        deckRow.pre_quiz_body_text ??
+        (legacyPreQuizBody || defaults.preQuiz.bodyText),
       tickerText:
         deckRow.pre_quiz_ticker_text ?? defaults.preQuiz.tickerText,
     },
-    firstBreak: {
-      enabled: deckRow.first_break_enabled ?? defaults.firstBreak.enabled,
+    preBreak: {
+      enabled: deckRow.first_break_enabled ?? defaults.preBreak.enabled,
       titleText:
-        deckRow.first_break_title_text ?? defaults.firstBreak.titleText,
-      bodyText: deckRow.first_break_body_text ?? defaults.firstBreak.bodyText,
-      tickerText:
-        deckRow.first_break_ticker_text ?? defaults.firstBreak.tickerText,
-    },
-    secondBreak: {
-      enabled: deckRow.second_break_enabled ?? defaults.secondBreak.enabled,
-      titleText:
-        deckRow.second_break_title_text ?? defaults.secondBreak.titleText,
+        deckRow.first_break_pre_title_text ?? defaults.preBreak.titleText,
       bodyText:
-        deckRow.second_break_body_text ?? defaults.secondBreak.bodyText,
+        deckRow.first_break_pre_body_text ?? defaults.preBreak.bodyText,
       tickerText:
-        deckRow.second_break_ticker_text ?? defaults.secondBreak.tickerText,
+        deckRow.first_break_ticker_text ?? defaults.preBreak.tickerText,
+    },
+    breakCountdown: {
+      enabled: deckRow.first_break_enabled ?? defaults.breakCountdown.enabled,
+      titleText:
+        deckRow.first_break_title_text ?? defaults.breakCountdown.titleText,
+      bodyText:
+        deckRow.first_break_body_text ?? defaults.breakCountdown.bodyText,
+      tickerText:
+        deckRow.first_break_ticker_text ?? defaults.breakCountdown.tickerText,
+    },
+    postBreak: {
+      enabled: deckRow.first_break_enabled ?? defaults.postBreak.enabled,
+      titleText:
+        deckRow.first_break_after_title_text ?? defaults.postBreak.titleText,
+      bodyText:
+        deckRow.first_break_after_body_text ?? defaults.postBreak.bodyText,
+      tickerText:
+        deckRow.first_break_ticker_text ?? defaults.postBreak.tickerText,
+    },
+    midQuizReset: {
+      enabled:
+        deckRow.mid_quiz_overlay_enabled ??
+        defaults.midQuizReset.enabled,
+      titleText:
+        deckRow.mid_quiz_overlay_title_text ??
+        defaults.midQuizReset.titleText,
+      bodyText:
+        deckRow.mid_quiz_overlay_body_text ??
+        defaults.midQuizReset.bodyText,
+      tickerText:
+        deckRow.mid_quiz_overlay_ticker_text ??
+        defaults.midQuizReset.tickerText,
+    },
+    saturdayBreak2: {
+      enabled:
+        deckRow.saturday_break_2_enabled ??
+        deckRow.second_break_enabled ??
+        defaults.saturdayBreak2.enabled,
+      titleText:
+        deckRow.saturday_break_2_title_text ??
+        deckRow.second_break_title_text ??
+        defaults.saturdayBreak2.titleText,
+      bodyText:
+        deckRow.saturday_break_2_body_text ??
+        deckRow.second_break_body_text ??
+        defaults.saturdayBreak2.bodyText,
+      tickerText:
+        deckRow.saturday_break_2_ticker_text ??
+        deckRow.second_break_ticker_text ??
+        defaults.saturdayBreak2.tickerText,
+    },
+    quizEnd: {
+      enabled: deckRow.quiz_end_enabled ?? defaults.quizEnd.enabled,
+      titleText: deckRow.quiz_end_title_text ?? defaults.quizEnd.titleText,
+      bodyText: deckRow.quiz_end_body_text ?? defaults.quizEnd.bodyText,
+      tickerText: deckRow.quiz_end_ticker_text ?? defaults.quizEnd.tickerText,
     },
   };
 }
@@ -338,6 +434,7 @@ async function insertDeckContents(deckId: string, deck: HostDeck): Promise<void>
 }
 
 export async function createHostDeck(deck: HostDeck): Promise<HostDeck> {
+  const showScreens = resolveHostShowScreens(deck.quizType, deck.showScreens);
   const { data, error } = await supabase
     .from("host_slide_decks")
     .insert({
@@ -345,52 +442,47 @@ export async function createHostDeck(deck: HostDeck): Promise<HostDeck> {
       quiz_type: deck.quizType,
       quiz_date: deck.quizDate,
       status: "draft",
-      pre_quiz_enabled: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).preQuiz.enabled,
-      pre_quiz_how_to_play_text: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).preQuiz.howToPlayText,
-      pre_quiz_recap_text: resolveHostShowScreens(deck.quizType, deck.showScreens)
-        .preQuiz.recapText,
-      pre_quiz_ticker_text: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).preQuiz.tickerText,
-      first_break_enabled: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).firstBreak.enabled,
-      first_break_title_text: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).firstBreak.titleText,
-      first_break_body_text: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).firstBreak.bodyText,
-      first_break_ticker_text: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).firstBreak.tickerText,
-      second_break_enabled: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).secondBreak.enabled,
-      second_break_title_text: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).secondBreak.titleText,
-      second_break_body_text: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).secondBreak.bodyText,
-      second_break_ticker_text: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).secondBreak.tickerText,
+      blank_enabled: showScreens.blank.enabled,
+      blank_title_text: showScreens.blank.titleText,
+      blank_body_text: showScreens.blank.bodyText,
+      blank_ticker_text: showScreens.blank.tickerText,
+      pre_roll_enabled: showScreens.preRoll.enabled,
+      pre_roll_title_text: showScreens.preRoll.titleText,
+      pre_roll_body_text: showScreens.preRoll.bodyText,
+      pre_roll_ticker_text: showScreens.preRoll.tickerText,
+      pre_quiz_enabled: showScreens.preQuiz.enabled,
+      pre_quiz_title_text: showScreens.preQuiz.titleText,
+      pre_quiz_body_text: showScreens.preQuiz.bodyText,
+      pre_quiz_how_to_play_text: showScreens.preQuiz.bodyText,
+      pre_quiz_recap_text: null,
+      pre_quiz_ticker_text: showScreens.preQuiz.tickerText,
+      first_break_enabled:
+        showScreens.preBreak.enabled ||
+        showScreens.breakCountdown.enabled ||
+        showScreens.postBreak.enabled,
+      first_break_pre_title_text: showScreens.preBreak.titleText,
+      first_break_pre_body_text: showScreens.preBreak.bodyText,
+      first_break_title_text: showScreens.breakCountdown.titleText,
+      first_break_body_text: showScreens.breakCountdown.bodyText,
+      first_break_after_title_text: showScreens.postBreak.titleText,
+      first_break_after_body_text: showScreens.postBreak.bodyText,
+      first_break_ticker_text: showScreens.breakCountdown.tickerText,
+      second_break_enabled: showScreens.saturdayBreak2.enabled,
+      second_break_title_text: showScreens.saturdayBreak2.titleText,
+      second_break_body_text: showScreens.saturdayBreak2.bodyText,
+      second_break_ticker_text: showScreens.saturdayBreak2.tickerText,
+      mid_quiz_overlay_enabled: showScreens.midQuizReset.enabled,
+      mid_quiz_overlay_title_text: showScreens.midQuizReset.titleText,
+      mid_quiz_overlay_body_text: showScreens.midQuizReset.bodyText,
+      mid_quiz_overlay_ticker_text: showScreens.midQuizReset.tickerText,
+      saturday_break_2_enabled: showScreens.saturdayBreak2.enabled,
+      saturday_break_2_title_text: showScreens.saturdayBreak2.titleText,
+      saturday_break_2_body_text: showScreens.saturdayBreak2.bodyText,
+      saturday_break_2_ticker_text: showScreens.saturdayBreak2.tickerText,
+      quiz_end_enabled: showScreens.quizEnd.enabled,
+      quiz_end_title_text: showScreens.quizEnd.titleText,
+      quiz_end_body_text: showScreens.quizEnd.bodyText,
+      quiz_end_ticker_text: showScreens.quizEnd.tickerText,
       connection_explanation: deck.connectionExplanation ?? null,
     })
     .select("id")
@@ -411,9 +503,7 @@ export async function createHostDeck(deck: HostDeck): Promise<HostDeck> {
 export async function loadHostDeck(deckId: string): Promise<HostDeck> {
   const { data: deckData, error: deckError } = await supabase
     .from("host_slide_decks")
-    .select(
-      "id,title,quiz_type,quiz_date,status,connection_explanation,pre_quiz_enabled,pre_quiz_how_to_play_text,pre_quiz_recap_text,pre_quiz_ticker_text,first_break_enabled,first_break_title_text,first_break_body_text,first_break_ticker_text,second_break_enabled,second_break_title_text,second_break_body_text,second_break_ticker_text,linked_quiz_recap_id,quiz_recap_last_published_at",
-    )
+    .select(HOST_SLIDE_DECK_COLUMNS)
     .eq("id", deckId)
     .single();
   if (deckError) throw new Error(deckError.message);
@@ -463,9 +553,7 @@ export async function loadHostDeck(deckId: string): Promise<HostDeck> {
 export async function listHostDecks(): Promise<HostDeck[]> {
   const { data: deckData, error: deckError } = await supabase
     .from("host_slide_decks")
-    .select(
-      "id,title,quiz_type,quiz_date,status,connection_explanation,pre_quiz_enabled,pre_quiz_how_to_play_text,pre_quiz_recap_text,pre_quiz_ticker_text,first_break_enabled,first_break_title_text,first_break_body_text,first_break_ticker_text,second_break_enabled,second_break_title_text,second_break_body_text,second_break_ticker_text,linked_quiz_recap_id,quiz_recap_last_published_at",
-    )
+    .select(HOST_SLIDE_DECK_COLUMNS)
     .order("quiz_date", { ascending: false });
   if (deckError) throw new Error(deckError.message);
 
@@ -514,6 +602,7 @@ export async function listHostDecks(): Promise<HostDeck[]> {
 }
 
 export async function updateHostDeck(deck: HostDeck): Promise<HostDeck> {
+  const showScreens = resolveHostShowScreens(deck.quizType, deck.showScreens);
   const { error: deckError } = await supabase
     .from("host_slide_decks")
     .update({
@@ -521,52 +610,47 @@ export async function updateHostDeck(deck: HostDeck): Promise<HostDeck> {
       quiz_type: deck.quizType,
       quiz_date: deck.quizDate,
       status: deck.status,
-      pre_quiz_enabled: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).preQuiz.enabled,
-      pre_quiz_how_to_play_text: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).preQuiz.howToPlayText,
-      pre_quiz_recap_text: resolveHostShowScreens(deck.quizType, deck.showScreens)
-        .preQuiz.recapText,
-      pre_quiz_ticker_text: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).preQuiz.tickerText,
-      first_break_enabled: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).firstBreak.enabled,
-      first_break_title_text: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).firstBreak.titleText,
-      first_break_body_text: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).firstBreak.bodyText,
-      first_break_ticker_text: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).firstBreak.tickerText,
-      second_break_enabled: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).secondBreak.enabled,
-      second_break_title_text: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).secondBreak.titleText,
-      second_break_body_text: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).secondBreak.bodyText,
-      second_break_ticker_text: resolveHostShowScreens(
-        deck.quizType,
-        deck.showScreens,
-      ).secondBreak.tickerText,
+      blank_enabled: showScreens.blank.enabled,
+      blank_title_text: showScreens.blank.titleText,
+      blank_body_text: showScreens.blank.bodyText,
+      blank_ticker_text: showScreens.blank.tickerText,
+      pre_roll_enabled: showScreens.preRoll.enabled,
+      pre_roll_title_text: showScreens.preRoll.titleText,
+      pre_roll_body_text: showScreens.preRoll.bodyText,
+      pre_roll_ticker_text: showScreens.preRoll.tickerText,
+      pre_quiz_enabled: showScreens.preQuiz.enabled,
+      pre_quiz_title_text: showScreens.preQuiz.titleText,
+      pre_quiz_body_text: showScreens.preQuiz.bodyText,
+      pre_quiz_how_to_play_text: showScreens.preQuiz.bodyText,
+      pre_quiz_recap_text: null,
+      pre_quiz_ticker_text: showScreens.preQuiz.tickerText,
+      first_break_enabled:
+        showScreens.preBreak.enabled ||
+        showScreens.breakCountdown.enabled ||
+        showScreens.postBreak.enabled,
+      first_break_pre_title_text: showScreens.preBreak.titleText,
+      first_break_pre_body_text: showScreens.preBreak.bodyText,
+      first_break_title_text: showScreens.breakCountdown.titleText,
+      first_break_body_text: showScreens.breakCountdown.bodyText,
+      first_break_after_title_text: showScreens.postBreak.titleText,
+      first_break_after_body_text: showScreens.postBreak.bodyText,
+      first_break_ticker_text: showScreens.breakCountdown.tickerText,
+      second_break_enabled: showScreens.saturdayBreak2.enabled,
+      second_break_title_text: showScreens.saturdayBreak2.titleText,
+      second_break_body_text: showScreens.saturdayBreak2.bodyText,
+      second_break_ticker_text: showScreens.saturdayBreak2.tickerText,
+      mid_quiz_overlay_enabled: showScreens.midQuizReset.enabled,
+      mid_quiz_overlay_title_text: showScreens.midQuizReset.titleText,
+      mid_quiz_overlay_body_text: showScreens.midQuizReset.bodyText,
+      mid_quiz_overlay_ticker_text: showScreens.midQuizReset.tickerText,
+      saturday_break_2_enabled: showScreens.saturdayBreak2.enabled,
+      saturday_break_2_title_text: showScreens.saturdayBreak2.titleText,
+      saturday_break_2_body_text: showScreens.saturdayBreak2.bodyText,
+      saturday_break_2_ticker_text: showScreens.saturdayBreak2.tickerText,
+      quiz_end_enabled: showScreens.quizEnd.enabled,
+      quiz_end_title_text: showScreens.quizEnd.titleText,
+      quiz_end_body_text: showScreens.quizEnd.bodyText,
+      quiz_end_ticker_text: showScreens.quizEnd.tickerText,
       connection_explanation: deck.connectionExplanation?.trim()
         ? deck.connectionExplanation
         : null,
