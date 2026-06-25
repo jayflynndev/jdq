@@ -5,6 +5,7 @@ import type {
   HostRound,
   WeeklyHostDeck,
 } from "@/src/host-slides/types";
+import { resolveHostShowScreens } from "@/src/host-slides/showScreens";
 
 function buildRoundQuestionSlides(round: HostRound): HostPresenterSlide[] {
   return round.questions.map((question) => ({
@@ -40,6 +41,21 @@ function buildRoundAnswerSection(round: HostRound): HostPresenterSlide[] {
 
 function buildWeeklySequence(deck: WeeklyHostDeck): HostPresenterSlide[] {
   const [round1, round2, round3, round4, round5] = deck.rounds;
+  const showScreens = resolveHostShowScreens(
+    deck.quizType,
+    deck.showScreens,
+  );
+  const preQuizSlides: HostPresenterSlide[] = showScreens.preQuiz.enabled
+    ? [{ id: `${deck.id}-pre-quiz`, type: "pre-quiz" }]
+    : [];
+  const firstBreakSlides: HostPresenterSlide[] =
+    showScreens.firstBreak.enabled
+      ? [{ id: `${deck.id}-first-break`, type: "break", breakType: "first" }]
+      : [];
+  const secondBreakSlides: HostPresenterSlide[] =
+    showScreens.secondBreak.enabled
+      ? [{ id: `${deck.id}-second-break`, type: "break", breakType: "second" }]
+      : [];
   const connectionExplanation: HostPresenterSlide[] =
     deck.connectionExplanation?.trim()
       ? [
@@ -49,7 +65,7 @@ function buildWeeklySequence(deck: WeeklyHostDeck): HostPresenterSlide[] {
           },
         ]
       : [];
-  const secondBreak: HostPresenterSlide[] =
+  const dingbatSlides: HostPresenterSlide[] =
     deck.quizType === "saturday"
       ? [
           { id: `${deck.id}-dingbat-question`, type: "dingbat-question" },
@@ -67,16 +83,19 @@ function buildWeeklySequence(deck: WeeklyHostDeck): HostPresenterSlide[] {
     : [];
 
   return [
+    ...preQuizSlides,
     { id: `${deck.id}-title`, type: "title" },
     ...buildRoundSection(round1),
     ...buildRoundSection(round2),
     ...buildRoundSection(round3),
+    ...firstBreakSlides,
     ...buildRoundAnswerSection(round1),
     ...buildRoundAnswerSection(round2),
     ...buildRoundAnswerSection(round3),
     ...buildRoundSection(round4),
     ...buildRoundSection(round5),
-    ...secondBreak,
+    ...secondBreakSlides,
+    ...dingbatSlides,
     ...buildRoundAnswerSection(round4),
     ...connectionExplanation,
     ...buildRoundAnswerSection(round5),
@@ -85,12 +104,30 @@ function buildWeeklySequence(deck: WeeklyHostDeck): HostPresenterSlide[] {
 }
 
 function buildPatreonSequence(deck: PatreonHostDeck): HostPresenterSlide[] {
+  const showScreens = resolveHostShowScreens(deck.quizType, deck.showScreens);
   const slides: HostPresenterSlide[] = [
+    ...(showScreens.preQuiz.enabled
+      ? [{ id: `${deck.id}-pre-quiz`, type: "pre-quiz" } as const]
+      : []),
     { id: `${deck.id}-title`, type: "title" },
   ];
 
-  deck.rounds.forEach((round) => {
+  deck.rounds.forEach((round, roundIndex) => {
     slides.push(...buildRoundSection(round));
+    if (showScreens.firstBreak.enabled && roundIndex === 2) {
+      slides.push({
+        id: `${deck.id}-first-break`,
+        type: "break",
+        breakType: "first",
+      });
+    }
+    if (showScreens.secondBreak.enabled && roundIndex === 4) {
+      slides.push({
+        id: `${deck.id}-second-break`,
+        type: "break",
+        breakType: "second",
+      });
+    }
     slides.push(...buildRoundAnswerSection(round));
   });
 

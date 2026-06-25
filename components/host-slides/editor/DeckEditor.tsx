@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ClipboardEvent, DragEvent } from "react";
 import {
   FaCheck,
@@ -17,8 +17,10 @@ import { ReadinessSummaryPanel } from "@/components/host-slides/editor/Readiness
 import { PresenterGateButton } from "@/components/host-slides/PresenterGateButton";
 import {
   createEmptyDingbatSet,
+  type HostBreakScreenSettings,
   type HostDeck,
   type HostDingbatSet,
+  type HostPreQuizScreenSettings,
   type HostQuestion,
 } from "@/src/host-slides/types";
 import {
@@ -32,6 +34,7 @@ import {
 } from "@/src/host-slides/supabaseImages";
 import { getImageFileFromDataTransfer } from "@/src/host-slides/browserImageFiles";
 import type { QuizRecapPublishResult } from "@/src/host-slides/quizRecapPublishing";
+import { resolveHostShowScreens } from "@/src/host-slides/showScreens";
 
 type DeckEditorProps = {
   deckId: string;
@@ -351,6 +354,23 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
     [deck],
   );
 
+  const updateQuizRecapAccessCodes = useCallback(
+    (codes: { part1?: string; part2?: string }) => {
+      setDeck((current) =>
+        current
+          ? {
+              ...current,
+              quizRecapAccessCodes: {
+                ...current.quizRecapAccessCodes,
+                ...codes,
+              },
+            }
+          : current,
+      );
+    },
+    [],
+  );
+
   if (loading) {
     return (
       <main className="qhl-shell">
@@ -383,6 +403,53 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
     setDeck((current) =>
       current ? { ...current, connectionExplanation } : current,
     );
+    setSavedMessage(null);
+  }
+
+  function updatePreQuizScreen(
+    updates: Partial<HostPreQuizScreenSettings>,
+  ) {
+    setDeck((current) => {
+      if (!current) return current;
+      const showScreens = resolveHostShowScreens(
+        current.quizType,
+        current.showScreens,
+      );
+      return {
+        ...current,
+        showScreens: {
+          ...showScreens,
+          preQuiz: {
+            ...showScreens.preQuiz,
+            ...updates,
+          },
+        },
+      };
+    });
+    setSavedMessage(null);
+  }
+
+  function updateBreakScreen(
+    breakKey: "firstBreak" | "secondBreak",
+    updates: Partial<HostBreakScreenSettings>,
+  ) {
+    setDeck((current) => {
+      if (!current) return current;
+      const showScreens = resolveHostShowScreens(
+        current.quizType,
+        current.showScreens,
+      );
+      return {
+        ...current,
+        showScreens: {
+          ...showScreens,
+          [breakKey]: {
+            ...showScreens[breakKey],
+            ...updates,
+          },
+        },
+      };
+    });
     setSavedMessage(null);
   }
 
@@ -553,6 +620,8 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
     }
   }
 
+  const showScreens = resolveHostShowScreens(deck.quizType, deck.showScreens);
+
   return (
     <main className="qhl-shell space-y-5">
       <section className="qhl-hero">
@@ -603,6 +672,137 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
       </section>
 
       <ReadinessSummaryPanel deck={deck} />
+
+      <section className="qhl-card space-y-4">
+        <div>
+          <div className="qhl-kicker">Show Screens</div>
+          <h2 className="mt-1 text-xl font-bold text-white">
+            Pre-Quiz Screen
+          </h2>
+          <p className="mt-1 text-sm text-violet-100/70">
+            Audience-facing holding screen for the start of the stream.
+            Streamlabs handles the camera and countdown timer overlays.
+          </p>
+        </div>
+
+        <label className="inline-flex items-center gap-3 text-sm font-semibold text-violet-50">
+          <input
+            type="checkbox"
+            checked={showScreens.preQuiz.enabled}
+            onChange={(event) =>
+              updatePreQuizScreen({ enabled: event.target.checked })
+            }
+            className="h-4 w-4 accent-violet-500"
+          />
+          Enable pre-quiz screen
+        </label>
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <label className="block">
+            <span className="qhl-label">How to play text</span>
+            <textarea
+              value={showScreens.preQuiz.howToPlayText}
+              onChange={(event) =>
+                updatePreQuizScreen({ howToPlayText: event.target.value })
+              }
+              className="qhl-input min-h-32"
+            />
+          </label>
+          <label className="block">
+            <span className="qhl-label">Recap / website text</span>
+            <textarea
+              value={showScreens.preQuiz.recapText}
+              onChange={(event) =>
+                updatePreQuizScreen({ recapText: event.target.value })
+              }
+              className="qhl-input min-h-32"
+            />
+          </label>
+          <label className="block">
+            <span className="qhl-label">Ticker / socials text</span>
+            <textarea
+              value={showScreens.preQuiz.tickerText}
+              onChange={(event) =>
+                updatePreQuizScreen({ tickerText: event.target.value })
+              }
+              className="qhl-input min-h-32"
+            />
+          </label>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          {(["firstBreak", "secondBreak"] as const).map((breakKey) => {
+            const settings = showScreens[breakKey];
+            const label =
+              breakKey === "firstBreak" ? "First Break" : "Second Break";
+
+            return (
+              <div
+                key={breakKey}
+                className="space-y-4 rounded-xl border border-violet-200/15 bg-white/5 p-4"
+              >
+                <div>
+                  <h3 className="text-lg font-bold text-white">{label}</h3>
+                  <p className="mt-1 text-sm text-violet-100/70">
+                    {breakKey === "firstBreak"
+                      ? "Shown after Round 3 questions, before Round 1 answers."
+                      : "Shown after Round 5 questions, before Round 4 answers. For Saturday it appears before Dingbats when enabled."}
+                  </p>
+                </div>
+                <label className="inline-flex items-center gap-3 text-sm font-semibold text-violet-50">
+                  <input
+                    type="checkbox"
+                    checked={settings.enabled}
+                    onChange={(event) =>
+                      updateBreakScreen(breakKey, {
+                        enabled: event.target.checked,
+                      })
+                    }
+                    className="h-4 w-4 accent-violet-500"
+                  />
+                  Enable {label.toLowerCase()} screen
+                </label>
+                <label className="block">
+                  <span className="qhl-label">{label} title</span>
+                  <input
+                    className="qhl-input"
+                    value={settings.titleText}
+                    onChange={(event) =>
+                      updateBreakScreen(breakKey, {
+                        titleText: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+                <label className="block">
+                  <span className="qhl-label">{label} body text</span>
+                  <textarea
+                    className="qhl-input min-h-28"
+                    value={settings.bodyText}
+                    onChange={(event) =>
+                      updateBreakScreen(breakKey, {
+                        bodyText: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+                <label className="block">
+                  <span className="qhl-label">{label} ticker text</span>
+                  <textarea
+                    className="qhl-input min-h-20"
+                    value={settings.tickerText}
+                    onChange={(event) =>
+                      updateBreakScreen(breakKey, {
+                        tickerText: event.target.value,
+                      })
+                    }
+                  />
+                </label>
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
       <section className="space-y-4">
         {deck.rounds.map((round, roundIndex) => (
@@ -715,6 +915,7 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
         <QuizRecapReviewPanel
           deck={deck}
           onPublished={applyRecapPublication}
+          onAccessCodesChange={updateQuizRecapAccessCodes}
         />
       ) : null}
 

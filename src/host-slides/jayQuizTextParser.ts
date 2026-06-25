@@ -5,6 +5,7 @@ import type {
   HostQuestion,
   HostRound,
 } from "@/src/host-slides/types";
+import { getDefaultShowScreens } from "@/src/host-slides/showScreens";
 
 export type JayQuizParserOptions = {
   quizType?: HostQuizType;
@@ -204,6 +205,7 @@ export function parseJayQuizText(
       quizType,
       quizDate,
       status: options.status ?? "draft",
+      showScreens: getDefaultShowScreens(quizType),
       rounds,
       ...(tiebreaker ? { tiebreaker } : {}),
     };
@@ -230,6 +232,7 @@ export function parseJayQuizText(
     quizType,
     quizDate,
     status: options.status ?? "draft",
+    showScreens: getDefaultShowScreens(quizType),
     rounds,
     ...(tiebreaker ? { tiebreaker } : {}),
   };

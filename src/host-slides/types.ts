@@ -37,11 +37,38 @@ export interface HostDingbatSet {
   items: HostDingbatItems;
 }
 
+export interface HostPreQuizScreenSettings {
+  enabled: boolean;
+  howToPlayText: string;
+  recapText: string;
+  tickerText: string;
+}
+
+export interface HostBreakScreenSettings {
+  enabled: boolean;
+  titleText: string;
+  bodyText: string;
+  tickerText: string;
+}
+
+export interface HostShowScreens {
+  preQuiz: HostPreQuizScreenSettings;
+  firstBreak: HostBreakScreenSettings;
+  secondBreak: HostBreakScreenSettings;
+}
+
+export interface HostQuizRecapAccessCodes {
+  part1?: string;
+  part2?: string;
+}
+
 interface HostDeckBase {
   id: string;
   title: string;
   quizDate: string;
   status: HostDeckStatus;
+  showScreens?: HostShowScreens;
+  quizRecapAccessCodes?: HostQuizRecapAccessCodes;
   connectionExplanation?: string;
   linkedQuizRecapId?: string;
   quizRecapLastPublishedAt?: string;
@@ -71,6 +98,8 @@ export interface PatreonHostDeck extends HostDeckBase {
 export type HostDeck = WeeklyHostDeck | PatreonHostDeck;
 
 export type HostPresenterSlide =
+  | { id: string; type: "pre-quiz" }
+  | { id: string; type: "break"; breakType: "first" | "second" }
   | { id: string; type: "title" }
   | { id: string; type: "round-intro"; roundId: string }
   | { id: string; type: "question"; roundId: string; questionId: string }

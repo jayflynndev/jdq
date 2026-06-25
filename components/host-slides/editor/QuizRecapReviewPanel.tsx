@@ -13,11 +13,15 @@ import {
   publishHostDeckRecap,
 } from "@/src/host-slides/supabaseQuizRecapPublishing";
 import type { QuizRecapPublishResult } from "@/src/host-slides/quizRecapPublishing";
-import type { WeeklyHostDeck } from "@/src/host-slides/types";
+import type {
+  HostQuizRecapAccessCodes,
+  WeeklyHostDeck,
+} from "@/src/host-slides/types";
 
 type QuizRecapReviewPanelProps = {
   deck: WeeklyHostDeck;
   onPublished: (result: QuizRecapPublishResult) => void;
+  onAccessCodesChange: (codes: HostQuizRecapAccessCodes) => void;
 };
 
 function PartPreview({
@@ -82,9 +86,14 @@ function PartPreview({
 export function QuizRecapReviewPanel({
   deck,
   onPublished,
+  onAccessCodesChange,
 }: QuizRecapReviewPanelProps) {
-  const [part1AccessCode, setPart1AccessCode] = useState("");
-  const [part2AccessCode, setPart2AccessCode] = useState("");
+  const [part1AccessCode, setPart1AccessCode] = useState(
+    deck.quizRecapAccessCodes?.part1 ?? "",
+  );
+  const [part2AccessCode, setPart2AccessCode] = useState(
+    deck.quizRecapAccessCodes?.part2 ?? "",
+  );
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [loadingFields, setLoadingFields] = useState(false);
@@ -107,6 +116,10 @@ export function QuizRecapReviewPanel({
         if (cancelled) return;
         setPart1AccessCode(fields.part1AccessCode);
         setPart2AccessCode(fields.part2AccessCode);
+        onAccessCodesChange({
+          part1: fields.part1AccessCode,
+          part2: fields.part2AccessCode,
+        });
         setYoutubeUrl(fields.youtubeUrl);
         setThumbnailUrl(fields.thumbnailUrl);
       })
@@ -125,7 +138,17 @@ export function QuizRecapReviewPanel({
     return () => {
       cancelled = true;
     };
-  }, [deck.linkedQuizRecapId]);
+  }, [deck.linkedQuizRecapId, onAccessCodesChange]);
+
+  function updatePart1AccessCode(code: string) {
+    setPart1AccessCode(code);
+    onAccessCodesChange({ part1: code, part2: part2AccessCode });
+  }
+
+  function updatePart2AccessCode(code: string) {
+    setPart2AccessCode(code);
+    onAccessCodesChange({ part1: part1AccessCode, part2: code });
+  }
 
   async function publish() {
     setPublishing(true);
@@ -163,7 +186,8 @@ export function QuizRecapReviewPanel({
         </p>
         {deck.quizRecapLastPublishedAt ? (
           <p className="mt-2 text-sm font-semibold text-green-200">
-            Last published: {new Date(deck.quizRecapLastPublishedAt).toLocaleString("en-GB")}
+            Last published:{" "}
+            {new Date(deck.quizRecapLastPublishedAt).toLocaleString("en-GB")}
           </p>
         ) : (
           <p className="mt-2 text-sm text-violet-100/65">Not published yet.</p>
@@ -176,7 +200,7 @@ export function QuizRecapReviewPanel({
           <input
             className="qhl-input"
             value={part1AccessCode}
-            onChange={(event) => setPart1AccessCode(event.target.value)}
+            onChange={(event) => updatePart1AccessCode(event.target.value)}
           />
         </label>
         <label>
@@ -184,7 +208,7 @@ export function QuizRecapReviewPanel({
           <input
             className="qhl-input"
             value={part2AccessCode}
-            onChange={(event) => setPart2AccessCode(event.target.value)}
+            onChange={(event) => updatePart2AccessCode(event.target.value)}
           />
         </label>
         <label>

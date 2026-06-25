@@ -42,6 +42,8 @@ export function getPresenterSlideImageUrls(
     case "tiebreaker-answer":
       return tiebreakImageUrl(deck.tiebreaker);
     case "title":
+    case "pre-quiz":
+    case "break":
     case "round-intro":
     case "connection-explanation":
       return [];

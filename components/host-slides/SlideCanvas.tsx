@@ -6,6 +6,10 @@ import type {
   HostRound,
 } from "@/src/host-slides/types";
 import { createEmptyDingbatSet } from "@/src/host-slides/types";
+import {
+  getBreakAccessCode,
+  resolveHostShowScreens,
+} from "@/src/host-slides/showScreens";
 
 type SlideCanvasProps = {
   deck: HostDeck;
@@ -33,10 +37,7 @@ function getRoundLabel(deck: HostDeck, round: HostRound): string {
   return `Round ${roundNumber}`;
 }
 
-function getQuestionNumber(
-  round: HostRound,
-  question: HostQuestion,
-): number {
+function getQuestionNumber(round: HostRound, question: HostQuestion): number {
   return (
     round.questions.findIndex((candidate) => candidate.id === question.id) + 1
   );
@@ -295,8 +296,140 @@ export function SlideCanvas({
     );
   }
 
+  function renderPreQuiz() {
+    const preQuiz = resolveHostShowScreens(
+      deck.quizType,
+      deck.showScreens,
+    ).preQuiz;
+
+    return (
+      <div className="relative flex h-full flex-col overflow-hidden p-[3%]">
+        <div className="flex min-h-0 flex-1 gap-[3%] pb-[6%]">
+          <div className="relative min-h-0 flex-1 overflow-hidden rounded-[2rem] border border-white/10 bg-black/70 shadow-2xl">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(124,58,237,0.28),transparent_34%),linear-gradient(135deg,rgba(0,0,0,0.4),rgba(0,0,0,0.9))]" />
+            <div className="relative flex h-full items-end p-[4%]"></div>
+          </div>
+
+          <aside className="flex w-[32%] min-w-0 flex-col rounded-[2rem] border border-white/10 bg-white/95 p-[2.5%] text-slate-950 shadow-2xl">
+            <p className="text-[clamp(0.8rem,1.05vw,1.15rem)] font-black uppercase tracking-[0.2em] text-violet-700">
+              {deck.quizType}
+            </p>
+            <h2 className="mt-[2%] font-heading text-[clamp(1.9rem,3vw,3.6rem)] font-black leading-none text-slate-950">
+              {deck.title}
+            </h2>
+
+            <div className="mt-[6%] space-y-[5%] text-[clamp(0.9rem,1.15vw,1.35rem)] leading-snug text-slate-800">
+              <p>{preQuiz.howToPlayText}</p>
+              <p className="font-semibold text-violet-900">
+                {preQuiz.recapText}
+              </p>
+            </div>
+
+            <div className="mt-auto pt-[6%]">
+              <p className="text-[clamp(0.8rem,1vw,1.1rem)] font-black uppercase tracking-[0.18em] text-slate-500">
+                Quiz starts in:
+              </p>
+              <div className="mt-[3%] flex h-[16vh] items-center justify-center rounded-2xl border-4 border-dashed border-slate-300 bg-slate-950 text-center text-[clamp(0.85rem,1.1vw,1.2rem)] font-bold uppercase tracking-[0.16em] text-slate-500"></div>
+            </div>
+          </aside>
+        </div>
+
+        <div className="absolute inset-x-0 bottom-0 flex h-[10%] items-center overflow-hidden border-t border-yellow-300/40 bg-black/90 px-[3%]">
+          <div className="mr-[2%] rounded bg-yellow-300 px-[1.2%] py-[0.45%] text-[clamp(0.8rem,1.05vw,1.15rem)] font-black uppercase tracking-[0.16em] text-black">
+            QuizHub
+          </div>
+          <p className="truncate text-[clamp(1rem,1.55vw,1.8rem)] font-bold uppercase tracking-[0.12em] text-white">
+            {preQuiz.tickerText}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  function renderBreak(breakType: "first" | "second") {
+    const showScreens = resolveHostShowScreens(deck.quizType, deck.showScreens);
+    const settings =
+      breakType === "first" ? showScreens.firstBreak : showScreens.secondBreak;
+
+    const accessCode = getBreakAccessCode(deck, breakType);
+
+    return (
+      <div className="relative flex h-full flex-col overflow-hidden p-[3%]">
+        <div className="flex min-h-0 flex-1 gap-[3%] pb-[6%]">
+          <div className="relative flex min-h-0 flex-1 flex-col justify-between overflow-hidden rounded-[2rem] border border-white/10 bg-black/70 p-[4%] shadow-2xl">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(255,212,76,0.2),transparent_28%),radial-gradient(circle_at_78%_72%,rgba(124,58,237,0.34),transparent_36%),linear-gradient(135deg,rgba(0,0,0,0.15),rgba(0,0,0,0.84))]" />
+            <div className="relative">
+              <h2 className="mt-[3%] max-w-[1100px] text-balance text-center font-heading text-[clamp(3rem,6vw,7rem)] font-black leading-none text-white">
+                {settings.titleText}
+              </h2>
+              <p className="mt-[4%] max-w-[900px] text-[clamp(1.2rem,2vw,2.4rem)] font-semibold leading-snug text-violet-100">
+                {settings.bodyText}
+              </p>
+            </div>
+          </div>
+
+          <aside className="flex w-[30%] min-w-0 flex-col rounded-[2rem] border border-white/10 bg-white/95 p-[2.5%] text-slate-950 shadow-2xl">
+            <p className="text-[clamp(0.8rem,1.05vw,1.15rem)] font-black uppercase tracking-[0.2em] text-violet-700">
+              {deck.quizType}
+            </p>
+            <h3 className="mt-[3%] font-heading text-[clamp(1.7rem,2.8vw,3.4rem)] font-black leading-none text-slate-950">
+              Answers coming up
+            </h3>
+            <p className="mt-[4%] text-[clamp(0.95rem,1.35vw,1.5rem)] font-bold text-violet-800">
+              {deck.title}
+            </p>
+            {accessCode.shouldShow ? (
+              <div className="mt-[8%] rounded-2xl border border-violet-200 bg-violet-50 p-[6%]">
+                <p className="text-[clamp(0.75rem,0.95vw,1.05rem)] font-black uppercase tracking-[0.18em] text-violet-700">
+                  quizhub.co.uk <br /> Access Code
+                </p>
+                <p className="mt-[2%] text-[clamp(0.9rem,1.15vw,1.3rem)] font-bold text-slate-500">
+                  {accessCode.part}
+                </p>
+                {accessCode.code ? (
+                  <p className="mt-[3%] break-words font-heading text-[clamp(2rem,4vw,4.5rem)] font-black leading-none text-slate-950">
+                    {accessCode.code}
+                  </p>
+                ) : (
+                  <p
+                    className={`mt-[3%] text-[clamp(1.1rem,1.6vw,1.8rem)] font-black leading-tight ${
+                      isPresenter ? "text-slate-600" : "text-amber-700"
+                    }`}
+                  >
+                    {isPresenter
+                      ? "Access code coming soon"
+                      : `${accessCode.part} access code missing`}
+                  </p>
+                )}
+              </div>
+            ) : null}
+            <div className="mt-auto">
+              <p className="text-[clamp(0.8rem,1vw,1.1rem)] font-black uppercase tracking-[0.18em] text-slate-500">
+                Back in:
+              </p>
+              <div className="mt-[3%] flex h-[18vh] items-center justify-center rounded-2xl border-4 border-dashed border-slate-300 bg-slate-950 text-center text-[clamp(0.85rem,1.1vw,1.2rem)] font-bold uppercase tracking-[0.16em] text-slate-500"></div>
+            </div>
+          </aside>
+        </div>
+
+        <div className="absolute inset-x-0 bottom-0 flex h-[10%] items-center overflow-hidden border-t border-yellow-300/40 bg-black/90 px-[3%]">
+          <div className="mr-[2%] rounded bg-yellow-300 px-[1.2%] py-[0.45%] text-[clamp(0.8rem,1.05vw,1.15rem)] font-black uppercase tracking-[0.16em] text-black">
+            Break
+          </div>
+          <p className="truncate text-[clamp(1rem,1.55vw,1.8rem)] font-bold uppercase tracking-[0.12em] text-white">
+            {settings.tickerText}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   function renderContent() {
     switch (slide.type) {
+      case "pre-quiz":
+        return renderPreQuiz();
+      case "break":
+        return renderBreak(slide.breakType);
       case "title":
         return (
           <div className="flex h-full flex-col justify-center">
@@ -387,7 +520,11 @@ export function SlideCanvas({
       className={`relative overflow-hidden bg-[#16082d] text-left ${frameClass}`}
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_10%,rgba(255,212,76,0.22),transparent_28%),radial-gradient(circle_at_10%_90%,rgba(124,58,237,0.4),transparent_35%)]" />
-      <div className="relative z-10 h-full p-[5%]">
+      <div
+        className={`relative z-10 h-full ${
+          slide.type === "pre-quiz" || slide.type === "break" ? "" : "p-[5%]"
+        }`}
+      >
         {renderContent()}
       </div>
       {isDingbatSlide ? (

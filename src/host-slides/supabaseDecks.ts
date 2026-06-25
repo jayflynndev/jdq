@@ -3,11 +3,13 @@ import type {
   HostDeck,
   HostDeckStatus,
   HostDingbatItems,
+  HostShowScreens,
   HostQuestion,
   HostQuizType,
   HostRound,
 } from "@/src/host-slides/types";
 import { resolveHostSlideImageUrl } from "@/src/host-slides/supabaseImages";
+import { resolveHostShowScreens } from "@/src/host-slides/showScreens";
 
 type HostSlideDeckRow = {
   id: string;
@@ -16,6 +18,18 @@ type HostSlideDeckRow = {
   quiz_date: string;
   status: HostDeckStatus;
   connection_explanation: string | null;
+  pre_quiz_enabled: boolean | null;
+  pre_quiz_how_to_play_text: string | null;
+  pre_quiz_recap_text: string | null;
+  pre_quiz_ticker_text: string | null;
+  first_break_enabled: boolean | null;
+  first_break_title_text: string | null;
+  first_break_body_text: string | null;
+  first_break_ticker_text: string | null;
+  second_break_enabled: boolean | null;
+  second_break_title_text: string | null;
+  second_break_body_text: string | null;
+  second_break_ticker_text: string | null;
   linked_quiz_recap_id: string | null;
   quiz_recap_last_published_at: string | null;
 };
@@ -46,6 +60,14 @@ type HostSlideDingbatRow = {
   image_storage_path: string | null;
 };
 
+type QuizRecapAccessCodeRow = {
+  id: string;
+  access_codes: {
+    part1?: string;
+    part2?: string;
+  } | null;
+};
+
 type InsertedRoundRow = { id: string; position: number };
 
 type HostSlideQuestionInsert = {
@@ -58,6 +80,37 @@ type HostSlideQuestionInsert = {
   image_storage_path: string | null;
   is_tiebreak: boolean;
 };
+
+function mapShowScreens(deckRow: HostSlideDeckRow): HostShowScreens {
+  const defaults = resolveHostShowScreens(deckRow.quiz_type, undefined);
+  return {
+    preQuiz: {
+      enabled: deckRow.pre_quiz_enabled ?? defaults.preQuiz.enabled,
+      howToPlayText:
+        deckRow.pre_quiz_how_to_play_text ?? defaults.preQuiz.howToPlayText,
+      recapText: deckRow.pre_quiz_recap_text ?? defaults.preQuiz.recapText,
+      tickerText:
+        deckRow.pre_quiz_ticker_text ?? defaults.preQuiz.tickerText,
+    },
+    firstBreak: {
+      enabled: deckRow.first_break_enabled ?? defaults.firstBreak.enabled,
+      titleText:
+        deckRow.first_break_title_text ?? defaults.firstBreak.titleText,
+      bodyText: deckRow.first_break_body_text ?? defaults.firstBreak.bodyText,
+      tickerText:
+        deckRow.first_break_ticker_text ?? defaults.firstBreak.tickerText,
+    },
+    secondBreak: {
+      enabled: deckRow.second_break_enabled ?? defaults.secondBreak.enabled,
+      titleText:
+        deckRow.second_break_title_text ?? defaults.secondBreak.titleText,
+      bodyText:
+        deckRow.second_break_body_text ?? defaults.secondBreak.bodyText,
+      tickerText:
+        deckRow.second_break_ticker_text ?? defaults.secondBreak.tickerText,
+    },
+  };
+}
 
 function mapQuestion(row: HostSlideQuestionRow): HostQuestion {
   return {
@@ -74,11 +127,27 @@ function mapQuestion(row: HostSlideQuestionRow): HostQuestion {
   };
 }
 
+async function loadQuizRecapAccessCodeRows(
+  recapIds: readonly string[],
+): Promise<QuizRecapAccessCodeRow[]> {
+  const uniqueRecapIds = [...new Set(recapIds)].filter(Boolean);
+  if (uniqueRecapIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("quizzes")
+    .select("id,access_codes")
+    .in("id", uniqueRecapIds);
+  if (error) throw new Error(error.message);
+
+  return (data ?? []) as QuizRecapAccessCodeRow[];
+}
+
 function mapDeck(
   deckRow: HostSlideDeckRow,
   roundRows: HostSlideRoundRow[],
   questionRows: HostSlideQuestionRow[],
   dingbatRows: HostSlideDingbatRow[],
+  accessCodeRows: QuizRecapAccessCodeRow[] = [],
 ): HostDeck {
   const rounds: HostRound[] = roundRows
     .filter((round) => round.deck_id === deckRow.id)
@@ -99,17 +168,33 @@ function mapDeck(
   const tiebreakRow = questionRows.find(
     (question) => question.deck_id === deckRow.id && question.is_tiebreak,
   );
+  const accessCodeRow = deckRow.linked_quiz_recap_id
+    ? accessCodeRows.find((row) => row.id === deckRow.linked_quiz_recap_id)
+    : undefined;
   const common = {
     id: deckRow.id,
     title: deckRow.title,
     quizType: deckRow.quiz_type,
     quizDate: deckRow.quiz_date,
     status: deckRow.status,
+    showScreens: mapShowScreens(deckRow),
     ...(deckRow.connection_explanation
       ? { connectionExplanation: deckRow.connection_explanation }
       : {}),
     ...(deckRow.linked_quiz_recap_id
       ? { linkedQuizRecapId: deckRow.linked_quiz_recap_id }
+      : {}),
+    ...(accessCodeRow?.access_codes
+      ? {
+          quizRecapAccessCodes: {
+            ...(accessCodeRow.access_codes.part1
+              ? { part1: accessCodeRow.access_codes.part1 }
+              : {}),
+            ...(accessCodeRow.access_codes.part2
+              ? { part2: accessCodeRow.access_codes.part2 }
+              : {}),
+          },
+        }
       : {}),
     ...(deckRow.quiz_recap_last_published_at
       ? {
@@ -260,6 +345,52 @@ export async function createHostDeck(deck: HostDeck): Promise<HostDeck> {
       quiz_type: deck.quizType,
       quiz_date: deck.quizDate,
       status: "draft",
+      pre_quiz_enabled: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).preQuiz.enabled,
+      pre_quiz_how_to_play_text: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).preQuiz.howToPlayText,
+      pre_quiz_recap_text: resolveHostShowScreens(deck.quizType, deck.showScreens)
+        .preQuiz.recapText,
+      pre_quiz_ticker_text: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).preQuiz.tickerText,
+      first_break_enabled: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).firstBreak.enabled,
+      first_break_title_text: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).firstBreak.titleText,
+      first_break_body_text: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).firstBreak.bodyText,
+      first_break_ticker_text: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).firstBreak.tickerText,
+      second_break_enabled: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).secondBreak.enabled,
+      second_break_title_text: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).secondBreak.titleText,
+      second_break_body_text: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).secondBreak.bodyText,
+      second_break_ticker_text: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).secondBreak.tickerText,
       connection_explanation: deck.connectionExplanation ?? null,
     })
     .select("id")
@@ -281,7 +412,7 @@ export async function loadHostDeck(deckId: string): Promise<HostDeck> {
   const { data: deckData, error: deckError } = await supabase
     .from("host_slide_decks")
     .select(
-      "id,title,quiz_type,quiz_date,status,connection_explanation,linked_quiz_recap_id,quiz_recap_last_published_at",
+      "id,title,quiz_type,quiz_date,status,connection_explanation,pre_quiz_enabled,pre_quiz_how_to_play_text,pre_quiz_recap_text,pre_quiz_ticker_text,first_break_enabled,first_break_title_text,first_break_body_text,first_break_ticker_text,second_break_enabled,second_break_title_text,second_break_body_text,second_break_ticker_text,linked_quiz_recap_id,quiz_recap_last_published_at",
     )
     .eq("id", deckId)
     .single();
@@ -314,12 +445,18 @@ export async function loadHostDeck(deckId: string): Promise<HostDeck> {
   if (roundError) throw new Error(roundError.message);
   if (questionError) throw new Error(questionError.message);
   if (dingbatError) throw new Error(dingbatError.message);
+  const accessCodeRows = await loadQuizRecapAccessCodeRows(
+    (deckData as HostSlideDeckRow).linked_quiz_recap_id
+      ? [(deckData as HostSlideDeckRow).linked_quiz_recap_id as string]
+      : [],
+  );
 
   return mapDeck(
     deckData as HostSlideDeckRow,
     (roundData ?? []) as HostSlideRoundRow[],
     (questionData ?? []) as HostSlideQuestionRow[],
     (dingbatData ?? []) as HostSlideDingbatRow[],
+    accessCodeRows,
   );
 }
 
@@ -327,7 +464,7 @@ export async function listHostDecks(): Promise<HostDeck[]> {
   const { data: deckData, error: deckError } = await supabase
     .from("host_slide_decks")
     .select(
-      "id,title,quiz_type,quiz_date,status,connection_explanation,linked_quiz_recap_id,quiz_recap_last_published_at",
+      "id,title,quiz_type,quiz_date,status,connection_explanation,pre_quiz_enabled,pre_quiz_how_to_play_text,pre_quiz_recap_text,pre_quiz_ticker_text,first_break_enabled,first_break_title_text,first_break_body_text,first_break_ticker_text,second_break_enabled,second_break_title_text,second_break_body_text,second_break_ticker_text,linked_quiz_recap_id,quiz_recap_last_published_at",
     )
     .order("quiz_date", { ascending: false });
   if (deckError) throw new Error(deckError.message);
@@ -366,7 +503,14 @@ export async function listHostDecks(): Promise<HostDeck[]> {
   const rounds = (roundData ?? []) as HostSlideRoundRow[];
   const questions = (questionData ?? []) as HostSlideQuestionRow[];
   const dingbats = (dingbatData ?? []) as HostSlideDingbatRow[];
-  return deckRows.map((deck) => mapDeck(deck, rounds, questions, dingbats));
+  const accessCodeRows = await loadQuizRecapAccessCodeRows(
+    deckRows
+      .map((deck) => deck.linked_quiz_recap_id)
+      .filter((recapId): recapId is string => Boolean(recapId)),
+  );
+  return deckRows.map((deck) =>
+    mapDeck(deck, rounds, questions, dingbats, accessCodeRows),
+  );
 }
 
 export async function updateHostDeck(deck: HostDeck): Promise<HostDeck> {
@@ -377,6 +521,52 @@ export async function updateHostDeck(deck: HostDeck): Promise<HostDeck> {
       quiz_type: deck.quizType,
       quiz_date: deck.quizDate,
       status: deck.status,
+      pre_quiz_enabled: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).preQuiz.enabled,
+      pre_quiz_how_to_play_text: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).preQuiz.howToPlayText,
+      pre_quiz_recap_text: resolveHostShowScreens(deck.quizType, deck.showScreens)
+        .preQuiz.recapText,
+      pre_quiz_ticker_text: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).preQuiz.tickerText,
+      first_break_enabled: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).firstBreak.enabled,
+      first_break_title_text: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).firstBreak.titleText,
+      first_break_body_text: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).firstBreak.bodyText,
+      first_break_ticker_text: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).firstBreak.tickerText,
+      second_break_enabled: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).secondBreak.enabled,
+      second_break_title_text: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).secondBreak.titleText,
+      second_break_body_text: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).secondBreak.bodyText,
+      second_break_ticker_text: resolveHostShowScreens(
+        deck.quizType,
+        deck.showScreens,
+      ).secondBreak.tickerText,
       connection_explanation: deck.connectionExplanation?.trim()
         ? deck.connectionExplanation
         : null,
