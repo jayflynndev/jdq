@@ -32,7 +32,7 @@ export function openAiReviewTimeoutMs(): number {
   if (Number.isFinite(configured) && configured >= 1000) {
     return Math.min(configured, 55000);
   }
-  return 8000;
+  return 25000;
 }
 
 export async function fetchOpenAiReview(
