@@ -182,4 +182,38 @@ describe("Production Review route diagnostics", () => {
     }
     expect(JSON.parse(init.body)).not.toHaveProperty("temperature");
   });
+
+  it("reports OpenAI timeouts before the platform kills the route", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-key");
+    vi.stubEnv("OPENAI_FACT_REVIEW_MODEL", "gpt-test");
+    vi.stubEnv("OPENAI_REVIEW_TIMEOUT_MS", "1000");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new DOMException("The operation was aborted.", "AbortError");
+      }),
+    );
+
+    const response = await factReviewPost(
+      request({
+        ...baseReviewRequest,
+        items: [
+          {
+            id: "q1",
+            roundNumber: 1,
+            questionNumber: 1,
+            question: "Question?",
+            answer: "Answer",
+            roundTitle: "Round",
+            pictureRequired: false,
+          },
+        ],
+      }),
+    );
+
+    await expect(response.json()).resolves.toMatchObject({
+      status: "unavailable",
+      message: "OpenAI Fact Review timed out after 1000ms",
+    });
+  });
 });

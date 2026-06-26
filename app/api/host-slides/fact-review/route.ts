@@ -3,9 +3,13 @@ import type {
   FactReviewFinding,
   FactReviewRequest,
 } from "@/src/host-slides/productionReview";
-import { openAiUnavailableMessage } from "@/src/host-slides/openAiReviewErrors";
+import {
+  fetchOpenAiReview,
+  openAiUnavailableMessage,
+} from "@/src/host-slides/openAiReviewErrors";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 type OpenAiResponse = {
   choices?: Array<{ message?: { content?: string } }>;
@@ -92,28 +96,51 @@ export async function POST(request: Request) {
     });
   }
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content:
-            "Review quiz facts only. Do not search the web. Do not edit data. Return only JSON. Flag wrong answers, possibly outdated material, alternative accepted answers, ambiguity, needs human review, low confidence, or high confidence. Include confidence from 0 to 1.",
+  let response: Response | { timedOut: true; timeoutMs: number };
+  try {
+    response = await fetchOpenAiReview(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
         },
-        {
-          role: "user",
-          content: JSON.stringify(reviewRequest),
-        },
-      ],
-    }),
-  });
+        body: JSON.stringify({
+          model,
+          response_format: { type: "json_object" },
+          messages: [
+            {
+              role: "system",
+              content:
+                "Review quiz facts only. Do not search the web. Do not edit data. Return only JSON. Flag wrong answers, possibly outdated material, alternative accepted answers, ambiguity, needs human review, low confidence, or high confidence. Include confidence from 0 to 1.",
+            },
+            {
+              role: "user",
+              content: JSON.stringify(reviewRequest),
+            },
+          ],
+        }),
+      },
+    );
+  } catch (error: unknown) {
+    return NextResponse.json({
+      status: "unavailable",
+      findings: [],
+      message:
+        error instanceof Error
+          ? `OpenAI Fact Review request failed: ${error.message}`
+          : "OpenAI Fact Review request failed.",
+    });
+  }
+
+  if ("timedOut" in response) {
+    return NextResponse.json({
+      status: "unavailable",
+      findings: [],
+      message: `OpenAI Fact Review timed out after ${response.timeoutMs}ms`,
+    });
+  }
 
   if (!response.ok) {
     return NextResponse.json({
