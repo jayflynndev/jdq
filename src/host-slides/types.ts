@@ -79,6 +79,112 @@ export interface HostQuizRecapAccessCodes {
   part2?: string;
 }
 
+export type HostQaFindingTargetType =
+  | "deck"
+  | "round"
+  | "question"
+  | "answer"
+  | "image"
+  | "recap"
+  | "show_screen";
+
+export type HostQaFindingSeverity = "info" | "warning" | "error";
+
+export type HostQaFindingCategory =
+  | "spelling"
+  | "grammar"
+  | "punctuation"
+  | "missing_answer"
+  | "duplicate_question"
+  | "duplicate_answer"
+  | "suspicious_answer"
+  | "picture_missing"
+  | "connection_round"
+  | "recap"
+  | "show_flow"
+  | "fact_review"
+  | "image_suggestion";
+
+export type HostQaFindingStatus =
+  | "open"
+  | "fixed"
+  | "ignored"
+  | "needs_review";
+
+export type HostQaFindingSource =
+  | "LOCAL"
+  | "AI_LANGUAGE"
+  | "AI_FACT"
+  | "AI_IMAGE"
+  | "AI_CONNECTION"
+  | "AI_PRESENTER";
+
+export type HostQaSuggestedFix = {
+  type: "replace_text";
+  field: "round_title" | "question" | "answer";
+  value: string;
+  description: string;
+};
+
+export type HostImageSuggestion = {
+  searchTerm: string;
+  imageType: string;
+  orientation: "portrait" | "landscape" | "square" | "any";
+  crop: string;
+};
+
+export interface HostQaFinding {
+  id: string;
+  deckId: string;
+  targetType: HostQaFindingTargetType;
+  targetId?: string;
+  roundNumber?: number;
+  questionNumber?: number;
+  severity: HostQaFindingSeverity;
+  category: HostQaFindingCategory;
+  source: HostQaFindingSource;
+  message: string;
+  suggestedFix?: HostQaSuggestedFix;
+  confidence?: number;
+  imageSuggestion?: HostImageSuggestion;
+  status: HostQaFindingStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type HostProductionReviewStageId =
+  | "structural_qa"
+  | "local_proofing"
+  | "deterministic_qa"
+  | "language_review"
+  | "fact_review"
+  | "image_suggestions"
+  | "connection_review"
+  | "presenter_review";
+
+export type HostProductionReviewStageStatus =
+  | "completed"
+  | "not_implemented"
+  | "unavailable"
+  | "failed";
+
+export interface HostProductionReviewStageResult {
+  id: HostProductionReviewStageId;
+  label: string;
+  status: HostProductionReviewStageStatus;
+  findingsCount: number;
+  durationMs: number;
+  completedAt: string;
+  message?: string;
+}
+
+export interface HostProductionReviewMetadata {
+  lastRunAt: string;
+  version: string;
+  durationMs: number;
+  stages: HostProductionReviewStageResult[];
+}
+
 export type HostShowBlockType =
   | "pre_quiz"
   | "title_slide"
@@ -106,6 +212,11 @@ export interface HostBreakBlockConfig {
   breakNumber: 1 | 2;
   accessCodePart?: "part1" | "part2";
   showTimerPlaceholder?: boolean;
+  textSettings?: {
+    titleText: string;
+    bodyText: string;
+    tickerText: string;
+  };
 }
 
 export type HostShowBlock =
@@ -152,6 +263,8 @@ interface HostDeckBase {
   status: HostDeckStatus;
   showScreens?: HostShowScreens;
   showOrder?: HostShowOrder;
+  qaFindings?: HostQaFinding[];
+  productionReview?: HostProductionReviewMetadata;
   quizRecapAccessCodes?: HostQuizRecapAccessCodes;
   connectionExplanation?: string;
   linkedQuizRecapId?: string;
@@ -187,6 +300,8 @@ export type HostPresenterSlide =
       type: "show-screen";
       screenType: HostShowScreenType;
       accessCodePart?: "part1" | "part2";
+      textSettings?: HostBreakBlockConfig["textSettings"];
+      showTimerPlaceholder?: boolean;
     }
   | { id: string; type: "title" }
   | { id: string; type: "round-intro"; roundId: string }

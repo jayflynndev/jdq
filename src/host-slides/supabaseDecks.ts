@@ -3,11 +3,23 @@ import type {
   HostDeck,
   HostDeckStatus,
   HostDingbatItems,
+  HostBreakBlockConfig,
   HostShowScreens,
   HostShowBlock,
   HostShowBlockType,
   HostShowOrder,
   HostQuestion,
+  HostQaFinding,
+  HostQaFindingCategory,
+  HostQaFindingSeverity,
+  HostQaFindingSource,
+  HostQaFindingStatus,
+  HostQaFindingTargetType,
+  HostQaSuggestedFix,
+  HostProductionReviewMetadata,
+  HostProductionReviewStageId,
+  HostProductionReviewStageResult,
+  HostProductionReviewStageStatus,
   HostQuizType,
   HostRound,
 } from "@/src/host-slides/types";
@@ -23,6 +35,8 @@ type HostSlideDeckRow = {
   status: HostDeckStatus;
   connection_explanation: string | null;
   show_order: unknown | null;
+  qa_findings: unknown | null;
+  production_review: unknown | null;
   blank_enabled: boolean | null;
   blank_title_text: string | null;
   blank_body_text: string | null;
@@ -66,7 +80,7 @@ type HostSlideDeckRow = {
 };
 
 const HOST_SLIDE_DECK_COLUMNS =
-  "id,title,quiz_type,quiz_date,status,connection_explanation,show_order,blank_enabled,blank_title_text,blank_body_text,blank_ticker_text,pre_roll_enabled,pre_roll_title_text,pre_roll_body_text,pre_roll_ticker_text,pre_quiz_enabled,pre_quiz_title_text,pre_quiz_body_text,pre_quiz_how_to_play_text,pre_quiz_recap_text,pre_quiz_ticker_text,first_break_enabled,first_break_pre_title_text,first_break_pre_body_text,first_break_title_text,first_break_body_text,first_break_after_title_text,first_break_after_body_text,first_break_ticker_text,second_break_enabled,second_break_title_text,second_break_body_text,second_break_ticker_text,mid_quiz_overlay_enabled,mid_quiz_overlay_title_text,mid_quiz_overlay_body_text,mid_quiz_overlay_ticker_text,saturday_break_2_enabled,saturday_break_2_title_text,saturday_break_2_body_text,saturday_break_2_ticker_text,quiz_end_enabled,quiz_end_title_text,quiz_end_body_text,quiz_end_ticker_text,linked_quiz_recap_id,quiz_recap_last_published_at";
+  "id,title,quiz_type,quiz_date,status,connection_explanation,show_order,qa_findings,production_review,blank_enabled,blank_title_text,blank_body_text,blank_ticker_text,pre_roll_enabled,pre_roll_title_text,pre_roll_body_text,pre_roll_ticker_text,pre_quiz_enabled,pre_quiz_title_text,pre_quiz_body_text,pre_quiz_how_to_play_text,pre_quiz_recap_text,pre_quiz_ticker_text,first_break_enabled,first_break_pre_title_text,first_break_pre_body_text,first_break_title_text,first_break_body_text,first_break_after_title_text,first_break_after_body_text,first_break_ticker_text,second_break_enabled,second_break_title_text,second_break_body_text,second_break_ticker_text,mid_quiz_overlay_enabled,mid_quiz_overlay_title_text,mid_quiz_overlay_body_text,mid_quiz_overlay_ticker_text,saturday_break_2_enabled,saturday_break_2_title_text,saturday_break_2_body_text,saturday_break_2_ticker_text,quiz_end_enabled,quiz_end_title_text,quiz_end_body_text,quiz_end_ticker_text,linked_quiz_recap_id,quiz_recap_last_published_at";
 
 type HostSlideRoundRow = {
   id: string;
@@ -119,6 +133,241 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function isQaTargetType(value: unknown): value is HostQaFindingTargetType {
+  return (
+    value === "deck" ||
+    value === "round" ||
+    value === "question" ||
+    value === "answer" ||
+    value === "image" ||
+    value === "recap" ||
+    value === "show_screen"
+  );
+}
+
+function isQaSeverity(value: unknown): value is HostQaFindingSeverity {
+  return value === "info" || value === "warning" || value === "error";
+}
+
+function isQaCategory(value: unknown): value is HostQaFindingCategory {
+  return (
+    value === "spelling" ||
+    value === "grammar" ||
+    value === "punctuation" ||
+    value === "missing_answer" ||
+    value === "duplicate_question" ||
+    value === "duplicate_answer" ||
+    value === "suspicious_answer" ||
+    value === "picture_missing" ||
+    value === "connection_round" ||
+    value === "recap" ||
+    value === "show_flow" ||
+    value === "fact_review" ||
+    value === "image_suggestion"
+  );
+}
+
+function isQaStatus(value: unknown): value is HostQaFindingStatus {
+  return (
+    value === "open" ||
+    value === "fixed" ||
+    value === "ignored" ||
+    value === "needs_review"
+  );
+}
+
+function isQaSource(value: unknown): value is HostQaFindingSource {
+  return (
+    value === "LOCAL" ||
+    value === "AI_LANGUAGE" ||
+    value === "AI_FACT" ||
+    value === "AI_IMAGE" ||
+    value === "AI_CONNECTION" ||
+    value === "AI_PRESENTER"
+  );
+}
+
+function isProductionReviewStageId(
+  value: unknown,
+): value is HostProductionReviewStageId {
+  return (
+    value === "structural_qa" ||
+    value === "local_proofing" ||
+    value === "deterministic_qa" ||
+    value === "language_review" ||
+    value === "fact_review" ||
+    value === "image_suggestions" ||
+    value === "connection_review" ||
+    value === "presenter_review"
+  );
+}
+
+function isProductionReviewStageStatus(
+  value: unknown,
+): value is HostProductionReviewStageStatus {
+  return (
+    value === "completed" ||
+    value === "not_implemented" ||
+    value === "unavailable" ||
+    value === "failed"
+  );
+}
+
+function parseImageSuggestion(
+  value: unknown,
+): HostQaFinding["imageSuggestion"] | undefined {
+  if (!isRecord(value)) return undefined;
+  const { searchTerm, imageType, orientation, crop } = value;
+  if (
+    typeof searchTerm !== "string" ||
+    typeof imageType !== "string" ||
+    typeof crop !== "string" ||
+    (orientation !== "portrait" &&
+      orientation !== "landscape" &&
+      orientation !== "square" &&
+      orientation !== "any")
+  ) {
+    return undefined;
+  }
+  return { searchTerm, imageType, orientation, crop };
+}
+
+function parseQaSuggestedFix(value: unknown): HostQaSuggestedFix | undefined {
+  if (!isRecord(value)) return undefined;
+  const { type, field, description } = value;
+  const replacementValue = value.value;
+  if (
+    type !== "replace_text" ||
+    (field !== "round_title" && field !== "question" && field !== "answer") ||
+    typeof replacementValue !== "string" ||
+    typeof description !== "string"
+  ) {
+    return undefined;
+  }
+  return { type, field, value: replacementValue, description };
+}
+
+function parseQaFindings(value: unknown): HostQaFinding[] | undefined {
+  if (value === null || value === undefined) return undefined;
+  if (!Array.isArray(value)) return undefined;
+  const findings = value.flatMap((item): HostQaFinding[] => {
+    if (!isRecord(item)) return [];
+    const {
+      id,
+      deckId,
+      targetType,
+      targetId,
+      roundNumber,
+      questionNumber,
+      severity,
+      category,
+      source,
+      message,
+      status,
+      createdAt,
+      updatedAt,
+    } = item;
+    const imageSuggestion = parseImageSuggestion(item.imageSuggestion);
+    if (
+      typeof id !== "string" ||
+      typeof deckId !== "string" ||
+      !isQaTargetType(targetType) ||
+      !isQaSeverity(severity) ||
+      !isQaCategory(category) ||
+      typeof message !== "string" ||
+      !isQaStatus(status) ||
+      typeof createdAt !== "string" ||
+      typeof updatedAt !== "string"
+    ) {
+      return [];
+    }
+    return [
+      {
+        id,
+        deckId,
+        targetType,
+        ...(typeof targetId === "string" ? { targetId } : {}),
+        ...(typeof roundNumber === "number" ? { roundNumber } : {}),
+        ...(typeof questionNumber === "number" ? { questionNumber } : {}),
+        severity,
+        category,
+        source: isQaSource(source) ? source : "LOCAL",
+        message,
+        ...(parseQaSuggestedFix(item.suggestedFix)
+          ? { suggestedFix: parseQaSuggestedFix(item.suggestedFix) }
+          : {}),
+        ...(typeof item.confidence === "number"
+          ? { confidence: item.confidence }
+          : {}),
+        ...(imageSuggestion ? { imageSuggestion } : {}),
+        status,
+        createdAt,
+        updatedAt,
+      },
+    ];
+  });
+  return findings;
+}
+
+function parseProductionReviewStage(
+  value: unknown,
+): HostProductionReviewStageResult | null {
+  if (!isRecord(value)) return null;
+  const {
+    id,
+    label,
+    status,
+    findingsCount,
+    durationMs,
+    completedAt,
+    message,
+  } = value;
+  if (
+    !isProductionReviewStageId(id) ||
+    typeof label !== "string" ||
+    !isProductionReviewStageStatus(status) ||
+    typeof findingsCount !== "number" ||
+    typeof durationMs !== "number" ||
+    typeof completedAt !== "string"
+  ) {
+    return null;
+  }
+  return {
+    id,
+    label,
+    status,
+    findingsCount,
+    durationMs,
+    completedAt,
+    ...(typeof message === "string" ? { message } : {}),
+  };
+}
+
+function parseProductionReview(
+  value: unknown,
+): HostProductionReviewMetadata | undefined {
+  if (!isRecord(value)) return undefined;
+  const { lastRunAt, version, durationMs, stages } = value;
+  if (
+    typeof lastRunAt !== "string" ||
+    typeof version !== "string" ||
+    typeof durationMs !== "number" ||
+    !Array.isArray(stages)
+  ) {
+    return undefined;
+  }
+  const parsedStages = stages.map(parseProductionReviewStage);
+  if (!parsedStages.every((stage): stage is HostProductionReviewStageResult => stage !== null)) {
+    return undefined;
+  }
+  return {
+    lastRunAt,
+    version,
+    durationMs,
+    stages: parsedStages,
+  };
+}
+
 function isShowBlockType(value: unknown): value is HostShowBlockType {
   return (
     value === "pre_quiz" ||
@@ -147,6 +396,19 @@ function numbersFromConfig(
     (item): item is number => Number.isInteger(item) && item > 0,
   );
   return numbers.length === value.length ? numbers : null;
+}
+
+function textSettingsFromConfig(
+  config: Record<string, unknown>,
+): HostBreakBlockConfig["textSettings"] | null {
+  const value = config.textSettings;
+  if (!isRecord(value)) return null;
+  const { titleText, bodyText, tickerText } = value;
+  return typeof titleText === "string" &&
+    typeof bodyText === "string" &&
+    typeof tickerText === "string"
+    ? { titleText, bodyText, tickerText }
+    : null;
 }
 
 function parseShowBlock(value: unknown): HostShowBlock | null {
@@ -194,6 +456,7 @@ function parseShowBlock(value: unknown): HostShowBlock | null {
   const breakNumber = value.config.breakNumber;
   const accessCodePart = value.config.accessCodePart;
   const showTimerPlaceholder = value.config.showTimerPlaceholder;
+  const textSettings = textSettingsFromConfig(value.config);
   if (breakNumber !== 1 && breakNumber !== 2) return null;
   if (
     accessCodePart !== undefined &&
@@ -218,6 +481,7 @@ function parseShowBlock(value: unknown): HostShowBlock | null {
       breakNumber,
       ...(accessCodePart ? { accessCodePart } : {}),
       ...(showTimerPlaceholder !== undefined ? { showTimerPlaceholder } : {}),
+      ...(textSettings ? { textSettings } : {}),
     },
   };
 }
@@ -391,6 +655,8 @@ function mapDeck(
   const accessCodeRow = deckRow.linked_quiz_recap_id
     ? accessCodeRows.find((row) => row.id === deckRow.linked_quiz_recap_id)
     : undefined;
+  const qaFindings = parseQaFindings(deckRow.qa_findings);
+  const productionReview = parseProductionReview(deckRow.production_review);
   const common = {
     id: deckRow.id,
     title: deckRow.title,
@@ -403,6 +669,8 @@ function mapDeck(
       deckRow.quiz_type,
       rounds.length,
     ),
+    ...(qaFindings ? { qaFindings } : {}),
+    ...(productionReview ? { productionReview } : {}),
     ...(deckRow.connection_explanation
       ? { connectionExplanation: deckRow.connection_explanation }
       : {}),
@@ -574,6 +842,8 @@ export async function createHostDeck(deck: HostDeck): Promise<HostDeck> {
       quiz_date: deck.quizDate,
       status: "draft",
       show_order: showOrder,
+      qa_findings: deck.qaFindings ?? null,
+      production_review: deck.productionReview ?? null,
       blank_enabled: showScreens.blank.enabled,
       blank_title_text: showScreens.blank.titleText,
       blank_body_text: showScreens.blank.bodyText,
@@ -745,6 +1015,8 @@ export async function updateHostDeck(deck: HostDeck): Promise<HostDeck> {
       quiz_date: deck.quizDate,
       status: deck.status,
       show_order: showOrder,
+      qa_findings: deck.qaFindings ?? null,
+      production_review: deck.productionReview ?? null,
       blank_enabled: showScreens.blank.enabled,
       blank_title_text: showScreens.blank.titleText,
       blank_body_text: showScreens.blank.bodyText,

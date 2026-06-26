@@ -4,6 +4,38 @@ import { getPresenterGateDecision } from "@/src/host-slides/presenterGate";
 import { parseJayQuizText } from "@/src/host-slides/jayQuizTextParser";
 import { createRepresentativeJayQuizText } from "@/src/host-slides/jayQuizTextParser.fixture";
 
+const REVIEW_METADATA = {
+  lastRunAt: "2026-06-26T10:00:00Z",
+  version: "production-review-v1",
+  durationMs: 0,
+  stages: [
+    {
+      id: "fact_review" as const,
+      label: "AI Fact Review",
+      status: "completed" as const,
+      findingsCount: 0,
+      durationMs: 0,
+      completedAt: "2026-06-26T10:00:00Z",
+    },
+    {
+      id: "image_suggestions" as const,
+      label: "AI Image Suggestions",
+      status: "completed" as const,
+      findingsCount: 0,
+      durationMs: 0,
+      completedAt: "2026-06-26T10:00:00Z",
+    },
+    {
+      id: "connection_review" as const,
+      label: "AI Connection Review",
+      status: "completed" as const,
+      findingsCount: 0,
+      durationMs: 0,
+      completedAt: "2026-06-26T10:00:00Z",
+    },
+  ],
+};
+
 function completeDeck() {
   const deck = parseJayQuizText(createRepresentativeJayQuizText());
   deck.rounds.forEach((round) =>
@@ -13,6 +45,8 @@ function completeDeck() {
       }
     }),
   );
+  deck.qaFindings = [];
+  deck.productionReview = REVIEW_METADATA;
   return deck;
 }
 

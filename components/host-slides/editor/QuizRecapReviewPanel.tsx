@@ -12,6 +12,7 @@ import {
   loadQuizRecapPublishingFields,
   publishHostDeckRecap,
 } from "@/src/host-slides/supabaseQuizRecapPublishing";
+import { getQuizRecapQuestionNumber } from "@/src/quiz-recap/rendering";
 import type { QuizRecapPublishResult } from "@/src/host-slides/quizRecapPublishing";
 import type {
   HostQuizRecapAccessCodes,
@@ -39,9 +40,17 @@ function PartPreview({
         {part.rounds.map((round) => (
           <div key={round.round}>
             <h4 className="font-bold text-white">Round {round.round}</h4>
-            <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-violet-100/85">
+            <ol className="mt-2 space-y-1 text-sm text-violet-100/85">
               {round.questions.map((question, index) => (
-                <li key={`${round.round}-${index}`}>{question}</li>
+                <li
+                  key={`${round.round}-${index}`}
+                  className="grid grid-cols-[1.75rem_1fr] gap-2"
+                >
+                  <span className="font-semibold tabular-nums">
+                    {getQuizRecapQuestionNumber(index)}
+                  </span>
+                  <span>{question}</span>
+                </li>
               ))}
             </ol>
           </div>

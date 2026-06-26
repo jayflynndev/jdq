@@ -7,6 +7,7 @@ import { supabase } from "@/supabaseClient";
 import Image from "next/image";
 import { BrandButton } from "@/components/ui/BrandButton";
 import { Card, CardContent } from "@/components/ui/Card";
+import { getQuizRecapQuestionNumber } from "@/src/quiz-recap/rendering";
 
 type QuizRound = { round: number; questions: string[] };
 type QuizImage = { label: string; url: string };
@@ -242,13 +243,16 @@ export default function QuizRecapDetailPage() {
                   <h3 className="mb-2 text-lg font-semibold text-textc">
                     Round {round.round}
                   </h3>
-                  <ul className="list-disc pl-5 text-textc">
+                  <ol className="space-y-1 text-textc">
                     {round.questions.map((q, i) => (
-                      <li key={i} className="py-0.5">
-                        {q}
+                      <li key={i} className="grid grid-cols-[2rem_1fr] gap-2 py-0.5">
+                        <span className="font-semibold tabular-nums">
+                          {getQuizRecapQuestionNumber(i)}
+                        </span>
+                        <span>{q}</span>
                       </li>
                     ))}
-                  </ul>
+                  </ol>
                 </CardContent>
               </Card>
             ))}

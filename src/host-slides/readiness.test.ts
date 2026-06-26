@@ -4,6 +4,38 @@ import { createRepresentativeJayQuizText } from "@/src/host-slides/jayQuizTextPa
 import { evaluateHostDeckReadiness } from "@/src/host-slides/readiness";
 import { createEmptyDingbatSet } from "@/src/host-slides/types";
 
+const REVIEW_METADATA = {
+  lastRunAt: "2026-06-26T10:00:00Z",
+  version: "production-review-v1",
+  durationMs: 0,
+  stages: [
+    {
+      id: "fact_review" as const,
+      label: "AI Fact Review",
+      status: "completed" as const,
+      findingsCount: 0,
+      durationMs: 0,
+      completedAt: "2026-06-26T10:00:00Z",
+    },
+    {
+      id: "image_suggestions" as const,
+      label: "AI Image Suggestions",
+      status: "completed" as const,
+      findingsCount: 0,
+      durationMs: 0,
+      completedAt: "2026-06-26T10:00:00Z",
+    },
+    {
+      id: "connection_review" as const,
+      label: "AI Connection Review",
+      status: "completed" as const,
+      findingsCount: 0,
+      durationMs: 0,
+      completedAt: "2026-06-26T10:00:00Z",
+    },
+  ],
+};
+
 function createCompleteDeck() {
   const deck = parseJayQuizText(createRepresentativeJayQuizText());
   deck.rounds.forEach((round) => {
@@ -13,6 +45,8 @@ function createCompleteDeck() {
       }
     });
   });
+  deck.qaFindings = [];
+  deck.productionReview = REVIEW_METADATA;
   return deck;
 }
 
@@ -97,5 +131,59 @@ describe("evaluateHostDeckReadiness", () => {
       errors: [{ code: "deck_missing", message: "Deck does not exist." }],
       isReady: false,
     });
+  });
+
+  it("warns when Production Review has not been run", () => {
+    const deck = createCompleteDeck();
+    delete deck.productionReview;
+
+    expect(evaluateHostDeckReadiness(deck).warnings).toContainEqual(
+      expect.objectContaining({ code: "production_review_not_run" }),
+    );
+  });
+
+  it("reports open QA findings but ignores ignored findings", () => {
+    const deck = createCompleteDeck();
+    deck.qaFindings = [
+      {
+        id: "qa-error",
+        deckId: deck.id,
+        targetType: "question",
+        targetId: deck.rounds[0].questions[0].id,
+        roundNumber: 1,
+        questionNumber: 1,
+        severity: "error",
+        category: "missing_answer",
+        source: "LOCAL",
+        message: "Open QA error.",
+        status: "open",
+        createdAt: "2026-06-26T10:00:00Z",
+        updatedAt: "2026-06-26T10:00:00Z",
+      },
+      {
+        id: "qa-ignored",
+        deckId: deck.id,
+        targetType: "question",
+        targetId: deck.rounds[0].questions[1].id,
+        roundNumber: 1,
+        questionNumber: 2,
+        severity: "warning",
+        category: "punctuation",
+        source: "LOCAL",
+        message: "Ignored QA warning.",
+        status: "ignored",
+        createdAt: "2026-06-26T10:00:00Z",
+        updatedAt: "2026-06-26T10:00:00Z",
+      },
+    ];
+
+    const result = evaluateHostDeckReadiness(deck);
+
+    expect(result.errors).toContainEqual(
+      expect.objectContaining({ code: "qa_open_error" }),
+    );
+    expect(result.warnings).not.toContainEqual(
+      expect.objectContaining({ code: "qa_open_warning" }),
+    );
   });
 });

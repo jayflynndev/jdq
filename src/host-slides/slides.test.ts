@@ -10,8 +10,11 @@ import type {
   HostDeck,
   HostPresenterSlide,
   HostRound,
+  HostShowBlock,
   HostShowScreenType,
 } from "@/src/host-slides/types";
+
+type ShowScreenSlide = Extract<HostPresenterSlide, { type: "show-screen" }>;
 
 function getDeck(quizType: HostDeck["quizType"]): HostDeck {
   const deck = mockHostSlideDecks.find(
@@ -82,6 +85,97 @@ function expectRoundSections(
 }
 
 describe("buildHostSlideSequence", () => {
+  it("keeps Break 1 and Break 2 show-screen configs independent", () => {
+    const deck = structuredClone(getDeck("thursday"));
+    deck.showOrder = resolveHostShowOrder(deck).map((block): HostShowBlock => {
+      if (block.type === "pre_break" && block.config.breakNumber === 1) {
+        return {
+          ...block,
+          config: {
+            ...block.config,
+            textSettings: {
+              titleText: "Custom Break 1 pre title",
+              bodyText: "Custom Break 1 pre body",
+              tickerText: "Custom Break 1 ticker",
+            },
+          },
+        };
+      }
+      if (block.type === "pre_break" && block.config.breakNumber === 2) {
+        return {
+          ...block,
+          config: {
+            ...block.config,
+            textSettings: {
+              titleText: "Custom Break 2 pre title",
+              bodyText: "Custom Break 2 pre body",
+              tickerText: "Custom Break 2 ticker",
+            },
+          },
+        };
+      }
+      return block;
+    });
+
+    const preBreakSlides = buildHostSlideSequence(deck).filter(
+      (slide): slide is ShowScreenSlide =>
+        slide.type === "show-screen" && slide.screenType === "pre_break",
+    );
+
+    expect(preBreakSlides).toHaveLength(2);
+    expect(preBreakSlides[0]).toMatchObject({
+      accessCodePart: "part1",
+      textSettings: {
+        titleText: "Custom Break 1 pre title",
+        bodyText: "Custom Break 1 pre body",
+        tickerText: "Custom Break 1 ticker",
+      },
+    });
+    expect(preBreakSlides[1]).toMatchObject({
+      accessCodePart: "part2",
+      textSettings: {
+        titleText: "Custom Break 2 pre title",
+        bodyText: "Custom Break 2 pre body",
+        tickerText: "Custom Break 2 ticker",
+      },
+    });
+  });
+
+  it("passes Part 1 to Break 1 and Part 2 to Break 2 access-code screens", () => {
+    const deck = structuredClone(getDeck("thursday"));
+    const breakSlides = buildHostSlideSequence(deck).filter(
+      (slide): slide is ShowScreenSlide =>
+        slide.type === "show-screen" &&
+        (slide.screenType === "pre_break" ||
+          slide.screenType === "break_countdown" ||
+          slide.screenType === "post_break"),
+    );
+
+    expect(breakSlides.map((slide) => slide.accessCodePart)).toEqual([
+      "part1",
+      "part1",
+      "part1",
+      "part2",
+      "part2",
+      "part2",
+    ]);
+  });
+
+  it("only marks countdown break blocks for timer placeholders", () => {
+    const deck = structuredClone(getDeck("thursday"));
+    const breakSlides = buildHostSlideSequence(deck).filter(
+      (slide): slide is ShowScreenSlide =>
+        slide.type === "show-screen" &&
+        (slide.screenType === "pre_break" ||
+          slide.screenType === "break_countdown" ||
+          slide.screenType === "post_break"),
+    );
+
+    expect(
+      breakSlides.map((slide) => slide.showTimerPlaceholder),
+    ).toEqual([false, true, false, false, true, false]);
+  });
+
   it("defines the required default Thursday show order", () => {
     const deck = getDeck("thursday");
 

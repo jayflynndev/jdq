@@ -1,5 +1,6 @@
 import type {
   HostDeck,
+  HostBreakBlockConfig,
   HostPresenterSlide,
   HostQuizType,
   HostRound,
@@ -7,6 +8,7 @@ import type {
   HostShowBlockType,
   HostShowOrder,
 } from "@/src/host-slides/types";
+import { getDefaultShowScreens } from "@/src/host-slides/showScreens";
 
 function blockBase(
   id: string,
@@ -69,6 +71,7 @@ function breakBlock(
   type: "pre_break" | "break_countdown" | "post_break",
   breakNumber: 1 | 2,
   label: string,
+  textSettings: HostBreakBlockConfig["textSettings"],
   showTimerPlaceholder = false,
 ): HostShowBlock {
   return {
@@ -78,6 +81,7 @@ function breakBlock(
       breakNumber,
       accessCodePart: breakNumber === 1 ? "part1" : "part2",
       showTimerPlaceholder,
+      textSettings,
     },
   };
 }
@@ -94,6 +98,49 @@ function tiebreakBlock(): HostShowBlock {
 }
 
 function weeklyShowOrder(quizType: "thursday" | "saturday"): HostShowOrder {
+  const screens = getDefaultShowScreens(quizType);
+  const break2Pre =
+    quizType === "saturday"
+      ? {
+          titleText: "Dingbats coming up",
+          bodyText:
+            "Jay will be back shortly with Dingbats and the final answer section. Keep your Part 2 code handy.",
+          tickerText: screens.saturdayBreak2.tickerText,
+        }
+      : {
+          titleText: "Answers to Rounds 4-5 coming up",
+          bodyText:
+            "Jay will talk you into the final answer section. Get your Part 2 answers ready.",
+          tickerText: screens.breakCountdown.tickerText,
+        };
+  const break2Countdown =
+    quizType === "saturday"
+      ? {
+          titleText: screens.saturdayBreak2.titleText,
+          bodyText: screens.saturdayBreak2.bodyText,
+          tickerText: screens.saturdayBreak2.tickerText,
+        }
+      : {
+          titleText: "Back shortly with the answers to Rounds 4-5",
+          bodyText:
+            "Grab a drink, check your answers, and get ready for the final answer section.",
+          tickerText: screens.breakCountdown.tickerText,
+        };
+  const break2Post =
+    quizType === "saturday"
+      ? {
+          titleText: "Welcome back",
+          bodyText:
+            "Jay is back with Dingbats and the final answers. Keep your Part 2 access code handy.",
+          tickerText: screens.postBreak.tickerText,
+        }
+      : {
+          titleText: "Welcome back",
+          bodyText:
+            "Jay is back with the answers to Rounds 4-5. Keep your Part 2 access code handy.",
+          tickerText: screens.postBreak.tickerText,
+        };
+
   return [
     simpleBlock("pre-quiz", "pre_quiz", "Pre Quiz"),
     simpleBlock("title-slide", "title_slide", "Title Slide"),
@@ -103,9 +150,15 @@ function weeklyShowOrder(quizType: "thursday" | "saturday"): HostShowOrder {
     questionSectionBlock([2]),
     roundIntroBlock(3, "questions"),
     questionSectionBlock([3]),
-    breakBlock("pre_break", 1, "Pre Break 1"),
-    breakBlock("break_countdown", 1, "Break Countdown 1", true),
-    breakBlock("post_break", 1, "Post Break 1"),
+    breakBlock("pre_break", 1, "Pre Break 1", screens.preBreak),
+    breakBlock(
+      "break_countdown",
+      1,
+      "Break Countdown 1",
+      screens.breakCountdown,
+      true,
+    ),
+    breakBlock("post_break", 1, "Post Break 1", screens.postBreak),
     roundIntroBlock(1, "answers"),
     answerSectionBlock([1]),
     roundIntroBlock(2, "answers"),
@@ -117,15 +170,15 @@ function weeklyShowOrder(quizType: "thursday" | "saturday"): HostShowOrder {
     questionSectionBlock([4]),
     roundIntroBlock(5, "questions"),
     questionSectionBlock([5]),
-    breakBlock("pre_break", 2, "Pre Break 2"),
-    breakBlock("break_countdown", 2, "Break Countdown 2", true),
+    breakBlock("pre_break", 2, "Pre Break 2", break2Pre),
+    breakBlock("break_countdown", 2, "Break Countdown 2", break2Countdown, true),
     ...(quizType === "saturday"
       ? [
           dingbatBlock("dingbat_question", "Dingbat Question"),
           dingbatBlock("dingbat_answer", "Dingbat Answer"),
         ]
       : []),
-    breakBlock("post_break", 2, "Post Break 2"),
+    breakBlock("post_break", 2, "Post Break 2", break2Post),
     roundIntroBlock(4, "answers"),
     answerSectionBlock([4]),
     roundIntroBlock(5, "answers"),
@@ -255,6 +308,8 @@ export function buildHostSlidesFromShowOrder(
             type: "show-screen",
             screenType: block.type,
             accessCodePart: block.config.accessCodePart,
+            textSettings: block.config.textSettings,
+            showTimerPlaceholder: block.config.showTimerPlaceholder,
           },
         ];
       case "break_countdown":
@@ -267,6 +322,8 @@ export function buildHostSlidesFromShowOrder(
                 ? "saturday_break_2"
                 : "break_countdown",
             accessCodePart: block.config.accessCodePart,
+            textSettings: block.config.textSettings,
+            showTimerPlaceholder: block.config.showTimerPlaceholder,
           },
         ];
       case "round_reset":

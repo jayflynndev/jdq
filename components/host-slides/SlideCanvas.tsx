@@ -1,5 +1,7 @@
+import React from "react";
 import Image from "next/image";
 import type {
+  HostBreakBlockConfig,
   HostDeck,
   HostPresenterSlide,
   HostQuestion,
@@ -12,6 +14,8 @@ import {
   getBreakAccessCode,
   resolveHostShowScreens,
 } from "@/src/host-slides/showScreens";
+
+type ShowScreenLayoutMode = "camera" | "break-countdown";
 
 type SlideCanvasProps = {
   deck: HostDeck;
@@ -347,6 +351,15 @@ export function SlideCanvas({
     }
   }
 
+  function showScreenLayoutMode(
+    screenType: HostShowScreenType,
+  ): ShowScreenLayoutMode {
+    return screenType === "break_countdown" ||
+      screenType === "saturday_break_2"
+      ? "break-countdown"
+      : "camera";
+  }
+
   function renderShowScreen({
     titleText,
     bodyText,
@@ -355,6 +368,8 @@ export function SlideCanvas({
     asideTitle,
     accessCode,
     reserveCountdown,
+    timerLabel,
+    layoutMode,
   }: {
     titleText: string;
     bodyText: string;
@@ -363,36 +378,75 @@ export function SlideCanvas({
     asideTitle: string;
     accessCode?: ReturnType<typeof getBreakAccessCode>;
     reserveCountdown: boolean;
+    timerLabel: string;
+    layoutMode: ShowScreenLayoutMode;
   }) {
     const visibleAccessCode = accessCode?.shouldShow ? accessCode : null;
+    const isBreakCountdownMode = layoutMode === "break-countdown";
 
     return (
       <div className="relative flex h-full flex-col overflow-hidden p-[3%]">
         <div className="flex min-h-0 flex-1 gap-[3%] pb-[6%]">
-          <div className="relative flex min-h-0 flex-1 flex-col justify-between overflow-hidden rounded-[2rem] border border-white/10 bg-black/70 p-[4%] shadow-2xl">
+          <div
+            className="relative flex min-h-0 flex-1 flex-col justify-between overflow-hidden rounded-[2rem] border border-white/10 bg-black/70 p-[4%] shadow-2xl"
+            data-show-screen-region="main"
+          >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(255,212,76,0.2),transparent_28%),radial-gradient(circle_at_78%_72%,rgba(124,58,237,0.34),transparent_36%),linear-gradient(135deg,rgba(0,0,0,0.15),rgba(0,0,0,0.84))]" />
-            <div className="relative">
-              <h2 className="mt-[3%] max-w-[1100px] text-balance text-center font-heading text-[clamp(3rem,6vw,7rem)] font-black leading-none text-white">
-                {titleText}
-              </h2>
-              <p className="mt-[4%] max-w-[900px] text-[clamp(1.2rem,2vw,2.4rem)] font-semibold leading-snug text-violet-100">
-                {bodyText}
-              </p>
+            <div className="relative h-full">
+              {isBreakCountdownMode ? (
+                <div className="flex h-full flex-col justify-center">
+                  <p className="text-[clamp(1rem,1.5vw,1.7rem)] font-black uppercase tracking-[0.2em] text-yellow-300">
+                    {titleText}
+                  </p>
+                  {bodyText.trim() ? (
+                    <h2 className="mt-[4%] max-w-[1100px] whitespace-pre-line text-balance font-heading text-[clamp(2.6rem,5.8vw,7rem)] font-black leading-none text-white">
+                      {bodyText}
+                    </h2>
+                  ) : null}
+                </div>
+              ) : (
+                <>
+                  <div className="absolute bottom-[6%] left-[6%] h-[18%] w-[24%] rounded-full border border-white/10 bg-white/5" />
+                  <div className="absolute right-[7%] top-[7%] h-[28%] w-[18%] rounded-full border border-yellow-300/20 bg-yellow-300/10" />
+                </>
+              )}
             </div>
           </div>
 
-          <aside className="flex w-[30%] min-w-0 flex-col rounded-[2rem] border border-white/10 bg-white/95 p-[2.5%] text-slate-950 shadow-2xl">
+          <aside
+            className="flex w-[34%] min-w-0 flex-col rounded-[2rem] border border-white/10 bg-white/95 p-[2.5%] text-slate-950 shadow-2xl"
+            data-show-screen-region="right-panel"
+          >
             <p className="text-[clamp(0.8rem,1.05vw,1.15rem)] font-black uppercase tracking-[0.2em] text-violet-700">
               {deck.quizType}
             </p>
-            <h3 className="mt-[3%] font-heading text-[clamp(1.7rem,2.8vw,3.4rem)] font-black leading-none text-slate-950">
-              {asideTitle}
+            <h3 className="mt-[2%] font-heading text-[clamp(1.5rem,2.5vw,3.2rem)] font-black leading-none text-slate-950">
+              {isBreakCountdownMode
+                ? visibleAccessCode
+                  ? "quizhub.co.uk"
+                  : asideTitle
+                : titleText || asideTitle}
             </h3>
-            <p className="mt-[4%] text-[clamp(0.95rem,1.35vw,1.5rem)] font-bold text-violet-800">
-              {deck.title}
-            </p>
+            {!isBreakCountdownMode ? (
+              <>
+                <p className="mt-[3%] text-[clamp(0.85rem,1.1vw,1.3rem)] font-bold text-violet-800">
+                  {deck.title}
+                </p>
+                <p className="mt-[1.5%] text-[clamp(0.75rem,0.95vw,1.05rem)] font-semibold text-slate-500">
+                  {new Date(`${deck.quizDate}T12:00:00`).toLocaleDateString(
+                    "en-GB",
+                    { day: "numeric", month: "long", year: "numeric" },
+                  )}
+                </p>
+              </>
+            ) : null}
+            {!isBreakCountdownMode && bodyText.trim() ? (
+              <p className="mt-[5%] whitespace-pre-line text-[clamp(1rem,1.55vw,1.75rem)] font-semibold leading-snug text-slate-800">
+                {bodyText}
+              </p>
+            ) : null}
             {visibleAccessCode ? (
-              <div className="mt-[8%] rounded-2xl border border-violet-200 bg-violet-50 p-[6%]">
+              <div className="mt-[6%] rounded-2xl border border-violet-200 bg-violet-50 p-[6%]">
                 <p className="text-[clamp(0.75rem,0.95vw,1.05rem)] font-black uppercase tracking-[0.18em] text-violet-700">
                   quizhub.co.uk <br /> Access Code
                 </p>
@@ -400,7 +454,7 @@ export function SlideCanvas({
                   {visibleAccessCode.part}
                 </p>
                 {visibleAccessCode.code ? (
-                  <p className="mt-[3%] break-words font-heading text-[clamp(2rem,4vw,4.5rem)] font-black leading-none text-slate-950">
+                  <p className="mt-[3%] break-words font-heading text-[clamp(2.4rem,4.8vw,5.4rem)] font-black leading-none text-slate-950">
                     {visibleAccessCode.code}
                   </p>
                 ) : (
@@ -417,9 +471,9 @@ export function SlideCanvas({
               </div>
             ) : null}
             {reserveCountdown ? (
-              <div className="mt-auto">
+              <div className="mt-auto" data-show-screen-region="timer">
                 <p className="text-[clamp(0.8rem,1vw,1.1rem)] font-black uppercase tracking-[0.18em] text-slate-500">
-                  Back in:
+                  {timerLabel}
                 </p>
                 <div className="mt-[3%] flex h-[18vh] items-center justify-center rounded-2xl border-4 border-dashed border-slate-300 bg-slate-950 text-center text-[clamp(0.85rem,1.1vw,1.2rem)] font-bold uppercase tracking-[0.16em] text-slate-500"></div>
               </div>
@@ -442,8 +496,18 @@ export function SlideCanvas({
   function renderConfiguredShowScreen(
     screenType: HostShowScreenType,
     accessCodePart?: "part1" | "part2",
+    textSettings?: HostBreakBlockConfig["textSettings"],
+    showTimerPlaceholder?: boolean,
   ) {
-    const settings = showScreenSettings(screenType);
+    const settings = {
+      ...showScreenSettings(screenType),
+      ...textSettings,
+    };
+    const defaultReserveCountdown =
+      screenType === "pre_quiz" ||
+      screenType === "break_countdown" ||
+      screenType === "saturday_break_2";
+    const reserveCountdown = showTimerPlaceholder ?? defaultReserveCountdown;
     return renderShowScreen({
       ...settings,
       tickerLabel: showScreenLabel(screenType),
@@ -452,9 +516,9 @@ export function SlideCanvas({
       accessCode: accessCodePart
         ? getBreakAccessCode(deck, accessCodePart)
         : undefined,
-      reserveCountdown:
-        screenType === "break_countdown" ||
-        screenType === "saturday_break_2",
+      reserveCountdown,
+      timerLabel: screenType === "pre_quiz" ? "Quiz Starts In:" : "Back in:",
+      layoutMode: showScreenLayoutMode(screenType),
     });
   }
 
@@ -464,6 +528,8 @@ export function SlideCanvas({
         return renderConfiguredShowScreen(
           slide.screenType,
           slide.accessCodePart,
+          slide.textSettings,
+          slide.showTimerPlaceholder,
         );
       case "title":
         return (
