@@ -1,4 +1,4 @@
-import { FaFileWord, FaLayerGroup } from "react-icons/fa";
+import { FaFileWord, FaLayerGroup, FaTachometerAlt } from "react-icons/fa";
 import { BrandButton } from "@/components/ui/BrandButton";
 import { Card, CardContent } from "@/components/ui/Card";
 import { SavedDeckList } from "@/components/host-slides/SavedDeckList";
@@ -31,6 +31,13 @@ export default function HostSlidesPage() {
               leftIcon={<FaLayerGroup />}
             >
               View Prepared Decks
+            </BrandButton>
+            <BrandButton
+              href="/admin/host-slides/limits"
+              variant="outline"
+              leftIcon={<FaTachometerAlt />}
+            >
+              Check Limits
             </BrandButton>
           </div>
 

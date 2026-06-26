@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  HttpFactReviewer,
   HttpLanguageReviewer,
   PRODUCTION_REVIEW_STAGES,
   runPresenterReview,
@@ -17,6 +18,7 @@ import type {
   LanguageReviewFinding,
   LanguageReviewRequest,
   LanguageReviewer,
+  FactReviewRequest,
   FactReviewer,
   ImageSuggestionProvider,
   ConnectionReviewer,
@@ -336,5 +338,58 @@ describe("Language Review", () => {
         items: [],
       }),
     ).resolves.toEqual([]);
+  });
+
+  it("splits HTTP fact review into smaller batches", async () => {
+    const fetchMock = vi.fn(
+      async (...args: [RequestInfo | URL, RequestInit?]) => {
+        const body = args[1]?.body;
+        if (typeof body !== "string") throw new Error("Expected JSON body");
+        const parsed = JSON.parse(body) as FactReviewRequest;
+        return Response.json({
+          status: "completed",
+          findings: parsed.items.map((item) => ({
+            itemId: item.id,
+            severity: "info",
+            message: `Checked ${item.id}`,
+            confidence: 0.9,
+          })),
+        });
+      },
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const items = Array.from({ length: 23 }, (_, index) => ({
+      id: `q${index + 1}`,
+      roundNumber: 1,
+      questionNumber: index + 1,
+      question: `Question ${index + 1}?`,
+      answer: `Answer ${index + 1}`,
+      roundTitle: "Round",
+      pictureRequired: false,
+    }));
+
+    const result = await new HttpFactReviewer("/test-fact-review", 10).reviewFacts({
+      deckId: "deck-1",
+      quizTitle: "Test Quiz",
+      quizType: "thursday",
+      items,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(result).toMatchObject({
+      status: "completed",
+      findings: expect.arrayContaining([
+        expect.objectContaining({ itemId: "q1" }),
+        expect.objectContaining({ itemId: "q23" }),
+      ]),
+    });
+
+    const batchSizes = fetchMock.mock.calls.map((call) => {
+      const body = call[1]?.body;
+      if (typeof body !== "string") throw new Error("Expected JSON body");
+      return (JSON.parse(body) as FactReviewRequest).items.length;
+    });
+    expect(batchSizes).toEqual([10, 10, 3]);
   });
 });

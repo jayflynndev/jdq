@@ -328,10 +328,49 @@ export class HttpLanguageReviewer implements LanguageReviewer {
   }
 }
 
+function chunkItems<TItem>(
+  items: readonly TItem[],
+  chunkSize: number,
+): TItem[][] {
+  const chunks: TItem[][] = [];
+  for (let index = 0; index < items.length; index += chunkSize) {
+    chunks.push(items.slice(index, index + chunkSize));
+  }
+  return chunks;
+}
+
 export class HttpFactReviewer implements FactReviewer {
-  constructor(private readonly endpoint = "/api/host-slides/fact-review") {}
+  constructor(
+    private readonly endpoint = "/api/host-slides/fact-review",
+    private readonly chunkSize = 10,
+  ) {}
 
   async reviewFacts(
+    request: FactReviewRequest,
+  ): Promise<ProviderReviewResult<FactReviewFinding>> {
+    const chunks = chunkItems(request.items, Math.max(1, this.chunkSize));
+    const results: ProviderReviewResult<FactReviewFinding>[] = [];
+
+    for (const items of chunks) {
+      results.push(await this.reviewFactBatch({ ...request, items }));
+    }
+
+    const unavailableMessages = results.flatMap((result, index) =>
+      result.status === "unavailable"
+        ? [`Batch ${index + 1}: ${result.message ?? "Unavailable"}`]
+        : [],
+    );
+
+    return {
+      status: unavailableMessages.length > 0 ? "unavailable" : "completed",
+      findings: results.flatMap((result) => result.findings),
+      ...(unavailableMessages.length > 0
+        ? { message: unavailableMessages.join("; ") }
+        : {}),
+    };
+  }
+
+  private async reviewFactBatch(
     request: FactReviewRequest,
   ): Promise<ProviderReviewResult<FactReviewFinding>> {
     const response = await fetch(this.endpoint, {
