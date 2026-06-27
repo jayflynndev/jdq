@@ -1,4 +1,5 @@
 import { supabase } from "@/supabaseClient";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   HostDeck,
   HostDeckStatus,
@@ -613,11 +614,12 @@ function mapQuestion(row: HostSlideQuestionRow): HostQuestion {
 
 async function loadQuizRecapAccessCodeRows(
   recapIds: readonly string[],
+  client: SupabaseClient = supabase,
 ): Promise<QuizRecapAccessCodeRow[]> {
   const uniqueRecapIds = [...new Set(recapIds)].filter(Boolean);
   if (uniqueRecapIds.length === 0) return [];
 
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from("quizzes")
     .select("id,access_codes")
     .in("id", uniqueRecapIds);
@@ -903,7 +905,14 @@ export async function createHostDeck(deck: HostDeck): Promise<HostDeck> {
 }
 
 export async function loadHostDeck(deckId: string): Promise<HostDeck> {
-  const { data: deckData, error: deckError } = await supabase
+  return loadHostDeckWithClient(deckId, supabase);
+}
+
+export async function loadHostDeckWithClient(
+  deckId: string,
+  client: SupabaseClient,
+): Promise<HostDeck> {
+  const { data: deckData, error: deckError } = await client
     .from("host_slide_decks")
     .select(HOST_SLIDE_DECK_COLUMNS)
     .eq("id", deckId)
@@ -916,19 +925,19 @@ export async function loadHostDeck(deckId: string): Promise<HostDeck> {
     { data: dingbatData, error: dingbatError },
   ] =
     await Promise.all([
-      supabase
+      client
         .from("host_slide_rounds")
         .select("id,deck_id,position,title")
         .eq("deck_id", deckId)
         .order("position"),
-      supabase
+      client
         .from("host_slide_questions")
         .select(
           "id,deck_id,round_id,position,question_text,answer_text,picture_required,image_storage_path,is_tiebreak",
         )
         .eq("deck_id", deckId)
         .order("position", { nullsFirst: false }),
-      supabase
+      client
         .from("host_slide_dingbats")
         .select("deck_id,position,answer_text,image_storage_path")
         .eq("deck_id", deckId)
@@ -941,6 +950,7 @@ export async function loadHostDeck(deckId: string): Promise<HostDeck> {
     (deckData as HostSlideDeckRow).linked_quiz_recap_id
       ? [(deckData as HostSlideDeckRow).linked_quiz_recap_id as string]
       : [],
+    client,
   );
 
   return mapDeck(
