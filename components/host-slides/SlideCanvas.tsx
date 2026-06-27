@@ -78,6 +78,9 @@ export function SlideCanvas({
   const questionNumberClass = isPresenter
     ? "text-[clamp(1.9rem,3vw,3.6rem)]"
     : "text-base sm:text-lg lg:text-2xl";
+  const readingTextTracking = isPresenter
+    ? "tracking-[0.018em]"
+    : "tracking-[0.01em]";
   const isDingbatSlide =
     slide.type === "dingbat-question" || slide.type === "dingbat-answer";
 
@@ -174,7 +177,7 @@ export function SlideCanvas({
             </div>
             <div className="flex min-w-0 flex-1 items-center">
               <h2
-                className={`font-heading font-extrabold leading-[1.1] text-white ${questionTextClass(
+                className={`font-heading font-extrabold leading-[1.1] text-white ${readingTextTracking} ${questionTextClass(
                   question.prompt,
                 )}`}
               >
@@ -185,7 +188,7 @@ export function SlideCanvas({
         ) : (
           <div className="mt-[3%] flex min-h-0 flex-1 items-center overflow-hidden pb-[4%]">
             <h2
-              className={`max-w-[1450px] text-balance font-heading font-extrabold leading-[1.12] text-white ${questionTextClass(
+              className={`max-w-[1450px] text-balance font-heading font-extrabold leading-[1.12] text-white ${readingTextTracking} ${questionTextClass(
                 question.prompt,
               )}`}
             >
@@ -215,13 +218,17 @@ export function SlideCanvas({
               {pictureArea(question)}
             </div>
             <div className="flex min-w-0 flex-1 flex-col justify-center">
-              <p className="font-heading text-[clamp(0.9rem,1.6vw,1.8rem)] font-semibold leading-tight text-violet-100">
+              <p
+                className={`font-heading text-[clamp(0.9rem,1.6vw,1.8rem)] font-semibold leading-tight text-violet-100 ${readingTextTracking}`}
+              >
                 {question.prompt}
               </p>
               <p className="mt-[3vh] text-[clamp(0.9rem,1.4vw,1.5rem)] font-bold uppercase tracking-[0.16em] text-violet-100">
                 Answer:
               </p>
-              <p className="mt-[1.5vh] font-heading text-[clamp(1.75rem,3.4vw,4rem)] font-extrabold leading-none text-yellow-300">
+              <p
+                className={`mt-[1.5vh] font-heading text-[clamp(1.75rem,3.4vw,4rem)] font-extrabold leading-none text-yellow-300 ${readingTextTracking}`}
+              >
                 {question.answer}
               </p>
             </div>
@@ -229,7 +236,7 @@ export function SlideCanvas({
         ) : (
           <div className="mt-[3%] flex min-h-0 flex-1 flex-col justify-center overflow-hidden pb-[4%]">
             <p
-              className={`max-w-[1450px] text-balance font-heading font-semibold leading-tight text-violet-100 ${answerQuestionClass(
+              className={`max-w-[1450px] text-balance font-heading font-semibold leading-tight text-violet-100 ${readingTextTracking} ${answerQuestionClass(
                 question.prompt,
               )}`}
             >
@@ -240,7 +247,7 @@ export function SlideCanvas({
               Answer:
             </p>
             <p
-              className={`mt-[1.5vh] max-w-[1450px] font-heading font-extrabold leading-[1.05] text-yellow-300 ${answerTextClass(
+              className={`mt-[1.5vh] max-w-[1450px] font-heading font-extrabold leading-[1.05] text-yellow-300 ${readingTextTracking} ${answerTextClass(
                 question.answer,
               )}`}
             >
@@ -363,8 +370,7 @@ export function SlideCanvas({
   function showScreenLayoutMode(
     screenType: HostShowScreenType,
   ): ShowScreenLayoutMode {
-    return screenType === "break_countdown" ||
-      screenType === "saturday_break_2"
+    return screenType === "break_countdown" || screenType === "saturday_break_2"
       ? "break-countdown"
       : "camera";
   }
@@ -413,9 +419,7 @@ export function SlideCanvas({
                     </h2>
                   ) : null}
                 </div>
-              ) : (
-                null
-              )}
+              ) : null}
             </div>
           </div>
 
@@ -511,8 +515,7 @@ export function SlideCanvas({
     return renderShowScreen({
       ...settings,
       tickerLabel: showScreenLabel(screenType),
-      asideTitle:
-        screenType === "quiz_end" ? "Quiz complete" : "Jay's Quiz",
+      asideTitle: screenType === "quiz_end" ? "Quiz complete" : "Jay's Quiz",
       accessCode: accessCodePart
         ? getBreakAccessCode(deck, accessCodePart)
         : undefined,
@@ -540,12 +543,6 @@ export function SlideCanvas({
             >
               {deck.title}
             </h2>
-            <p className="mt-[4%] text-[clamp(1.25rem,2.4vw,2.75rem)] text-violet-100">
-              {new Date(`${deck.quizDate}T12:00:00`).toLocaleDateString(
-                "en-GB",
-                { day: "numeric", month: "long", year: "numeric" },
-              )}
-            </p>
           </div>
         );
       case "round-intro": {
@@ -623,9 +620,7 @@ export function SlideCanvas({
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_10%,rgba(255,212,76,0.22),transparent_28%),radial-gradient(circle_at_10%_90%,rgba(124,58,237,0.4),transparent_35%)]" />
       <div
         className={`relative z-10 h-full ${
-          slide.type === "show-screen"
-            ? ""
-            : "p-[5%]"
+          slide.type === "show-screen" ? "" : "p-[5%]"
         }`}
       >
         {renderContent()}
