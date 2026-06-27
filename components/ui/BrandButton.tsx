@@ -18,7 +18,7 @@ export interface BrandButtonProps
 }
 
 const base =
-  "btn rounded-lg font-medium inline-flex items-center justify-center transition-transform duration-200 ease-out-soft focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed";
+  "btn rounded-lg font-medium inline-flex items-center justify-center transition-transform duration-200 ease-out-soft focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed";
 
 const sizeStyles: Record<Size, string> = {
   sm: "h-9 px-3 text-sm",
@@ -34,7 +34,7 @@ const variantStyles: Record<Variant, string> = {
   ghost:
     "bg-transparent hover:bg-brand/10 text-brand border border-transparent",
   outline:
-    "bg-transparent border borderc text-textc hover:bg-brand/10 hover:border-brand/40",
+    "border border-violet-200/70 bg-white/90 text-violet-950 shadow-sm hover:bg-yellow-50 hover:border-yellow-300 focus:ring-4 focus:ring-yellow-300/30",
 };
 
 export function BrandButton({

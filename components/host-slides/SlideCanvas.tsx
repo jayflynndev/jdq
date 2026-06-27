@@ -302,6 +302,15 @@ export function SlideCanvas({
     );
   }
 
+  function dingbatTickerText(): string {
+    const accessCode = getBreakAccessCode(deck, "part2");
+    if (!accessCode.shouldShow) return "Recap questions at quizhub.co.uk";
+    if (accessCode.code) {
+      return `Recap questions at quizhub.co.uk · Access code: ${accessCode.code}`;
+    }
+    return "Recap questions at quizhub.co.uk · Access code coming soon";
+  }
+
   function showScreenSettings(
     screenType: HostShowScreenType,
   ): HostShowScreenTextSettings {
@@ -405,10 +414,7 @@ export function SlideCanvas({
                   ) : null}
                 </div>
               ) : (
-                <>
-                  <div className="absolute bottom-[6%] left-[6%] h-[18%] w-[24%] rounded-full border border-white/10 bg-white/5" />
-                  <div className="absolute right-[7%] top-[7%] h-[28%] w-[18%] rounded-full border border-yellow-300/20 bg-yellow-300/10" />
-                </>
+                null
               )}
             </div>
           </div>
@@ -431,12 +437,6 @@ export function SlideCanvas({
               <>
                 <p className="mt-[3%] text-[clamp(0.85rem,1.1vw,1.3rem)] font-bold text-violet-800">
                   {deck.title}
-                </p>
-                <p className="mt-[1.5%] text-[clamp(0.75rem,0.95vw,1.05rem)] font-semibold text-slate-500">
-                  {new Date(`${deck.quizDate}T12:00:00`).toLocaleDateString(
-                    "en-GB",
-                    { day: "numeric", month: "long", year: "numeric" },
-                  )}
                 </p>
               </>
             ) : null}
@@ -631,7 +631,14 @@ export function SlideCanvas({
         {renderContent()}
       </div>
       {isDingbatSlide ? (
-        <div className="absolute inset-x-0 bottom-0 z-20 h-[9%] border-t border-white/10 bg-black/80" />
+        <div
+          className="absolute inset-x-0 bottom-0 z-20 flex h-[9%] items-center overflow-hidden border-t border-yellow-300/40 bg-black/90 px-[4%]"
+          data-dingbat-region="ticker"
+        >
+          <p className="truncate text-[clamp(0.95rem,1.45vw,1.75rem)] font-bold uppercase tracking-[0.1em] text-white">
+            {dingbatTickerText()}
+          </p>
+        </div>
       ) : null}
     </div>
   );

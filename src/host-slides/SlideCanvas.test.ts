@@ -13,10 +13,17 @@ function getDeck(quizType: HostDeck["quizType"]): HostDeck {
   return structuredClone(deck);
 }
 
-function renderSlide(slide: HostPresenterSlide): string {
-  const deck = getDeck("thursday");
+function renderSlideForDeck(
+  quizType: HostDeck["quizType"],
+  slide: HostPresenterSlide,
+): string {
+  const deck = getDeck(quizType);
   deck.quizRecapAccessCodes = { part1: "PART-ONE", part2: "PART-TWO" };
   return renderToStaticMarkup(createElement(SlideCanvas, { deck, slide }));
+}
+
+function renderSlide(slide: HostPresenterSlide): string {
+  return renderSlideForDeck("thursday", slide);
 }
 
 function regionMarkup(html: string, region: string): string {
@@ -145,5 +152,58 @@ describe("SlideCanvas show-screen layout", () => {
     expect(countdown.indexOf('data-show-screen-region="right-panel"')).toBeLessThan(
       countdown.indexOf('data-show-screen-region="timer"'),
     );
+  });
+
+  it("does not repeat the date in the show-screen right panel", () => {
+    const html = renderSlide({
+      id: "pre-quiz",
+      type: "show-screen",
+      screenType: "pre_quiz",
+    });
+
+    expect(regionMarkup(html, "right-panel")).not.toContain("June");
+    expect(regionMarkup(html, "right-panel")).not.toContain("2026");
+  });
+
+  it("keeps the camera-mode main area clear of decorative blobs", () => {
+    const html = renderSlide({
+      id: "pre-break",
+      type: "show-screen",
+      screenType: "pre_break",
+      showTimerPlaceholder: false,
+    });
+
+    expect(regionMarkup(html, "main")).not.toContain("rounded-full");
+    expect(regionMarkup(html, "main")).not.toContain("bg-yellow-300/10");
+  });
+
+  it("renders a Part 2 access-code ticker on Saturday Dingbat slides", () => {
+    const question = renderSlideForDeck("saturday", {
+      id: "dingbat-question",
+      type: "dingbat-question",
+    });
+    const answer = renderSlideForDeck("saturday", {
+      id: "dingbat-answer",
+      type: "dingbat-answer",
+    });
+
+    expect(question).toContain("Recap questions at quizhub.co.uk");
+    expect(question).toContain("Access code: PART-TWO");
+    expect(answer).toContain("Recap questions at quizhub.co.uk");
+    expect(answer).toContain("Access code: PART-TWO");
+  });
+
+  it("renders a clean Dingbat ticker fallback when the Part 2 code is missing", () => {
+    const deck = getDeck("saturday");
+    deck.quizRecapAccessCodes = { part1: "PART-ONE", part2: "" };
+    const html = renderToStaticMarkup(
+      createElement(SlideCanvas, {
+        deck,
+        slide: { id: "dingbat-question", type: "dingbat-question" },
+      }),
+    );
+
+    expect(html).toContain("Recap questions at quizhub.co.uk");
+    expect(html).toContain("Access code coming soon");
   });
 });
