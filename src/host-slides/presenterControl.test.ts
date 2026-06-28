@@ -156,14 +156,20 @@ describe("presenter show action resolver", () => {
     });
   });
 
-  it("returns unavailable for weekly actions on Patreon decks when absent", () => {
+  it("supports Patreon first break and rejects absent Patreon actions", () => {
     const slides = buildHostSlideSequence(deck("patreon"));
 
     expect(
       resolvePresenterShowActionIndex(slides, "go_to_first_break"),
     ).toMatchObject({
+      ok: true,
+      index: slides.findIndex((slide) => slide.id === "pre_break-1"),
+    });
+    expect(
+      resolvePresenterShowActionIndex(slides, "go_to_second_break"),
+    ).toMatchObject({
       ok: false,
-      message: expect.stringContaining("go_to_first_break"),
+      message: expect.stringContaining("go_to_second_break"),
     });
   });
 });

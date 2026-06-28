@@ -189,6 +189,7 @@ function weeklyShowOrder(quizType: "thursday" | "saturday"): HostShowOrder {
 }
 
 function patreonShowOrder(roundCount = 5): HostShowOrder {
+  const screens = getDefaultShowScreens("patreon");
   const roundNumbers = Array.from(
     { length: Math.max(0, roundCount) },
     (_, index) => index + 1,
@@ -201,6 +202,15 @@ function patreonShowOrder(roundCount = 5): HostShowOrder {
       roundIntroBlock(roundNumber, "questions"),
       questionSectionBlock([roundNumber]),
     ]),
+    breakBlock("pre_break", 1, "Pre Break", screens.preBreak),
+    breakBlock(
+      "break_countdown",
+      1,
+      "Break Countdown",
+      screens.breakCountdown,
+      true,
+    ),
+    breakBlock("post_break", 1, "Post Break", screens.postBreak),
     ...roundNumbers.flatMap((roundNumber) => [
       roundIntroBlock(roundNumber, "answers"),
       answerSectionBlock([roundNumber]),

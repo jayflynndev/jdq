@@ -447,8 +447,46 @@ describe("buildHostSlideSequence", () => {
     const answerIndexesAll = deck.rounds.flatMap((round) =>
       questionIndexes(slides, round, "answer"),
     );
+    const breakIndexes = [
+      ...showScreenIndexes(slides, "pre_break"),
+      ...showScreenIndexes(slides, "break_countdown"),
+      ...showScreenIndexes(slides, "post_break"),
+    ].sort((left, right) => left - right);
+
     expect(Math.max(...questionIndexesAll)).toBeLessThan(
       Math.min(...answerIndexesAll),
+    );
+    expect(breakIndexes).toHaveLength(3);
+    expect(Math.max(...questionIndexesAll)).toBeLessThan(
+      Math.min(...breakIndexes),
+    );
+    expect(Math.max(...breakIndexes)).toBeLessThan(
+      Math.min(...answerIndexesAll),
+    );
+    expect(
+      breakIndexes.map((index) =>
+        slides[index].type === "show-screen" ? slides[index].screenType : null,
+      ),
+    ).toEqual(["pre_break", "break_countdown", "post_break"]);
+  });
+
+  it("defines Patreon break screens between questions and answers", () => {
+    const deck = getDeck("patreon");
+    const summary = showOrderSummary(deck);
+    const firstBreakIndex = summary.indexOf("pre_break:1");
+
+    expect(summary.slice(firstBreakIndex, firstBreakIndex + 3)).toEqual([
+      "pre_break:1",
+      "break_countdown:1",
+      "post_break:1",
+    ]);
+    expect(firstBreakIndex).toBeGreaterThan(
+      summary.lastIndexOf(`question_section:${deck.rounds.length}`),
+    );
+    expect(firstBreakIndex).toBeLessThan(
+      summary.findIndex(
+        (entry, index) => index > firstBreakIndex && entry === "round_intro:1",
+      ),
     );
   });
 
