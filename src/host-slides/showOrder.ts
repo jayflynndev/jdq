@@ -262,7 +262,18 @@ function blockRoundNumbers(block: HostShowBlock): number[] {
 }
 
 export function resolveHostShowOrder(deck: HostDeck): HostShowOrder {
-  return deck.showOrder ?? getDefaultShowOrder(deck.quizType, deck.rounds.length);
+  const defaultOrder = getDefaultShowOrder(deck.quizType, deck.rounds.length);
+  if (!deck.showOrder) return defaultOrder;
+
+  const savedBlocksById = new Map(
+    deck.showOrder.map((block) => [block.id, block]),
+  );
+  const defaultBlockIds = new Set(defaultOrder.map((block) => block.id));
+
+  return [
+    ...defaultOrder.map((block) => savedBlocksById.get(block.id) ?? block),
+    ...deck.showOrder.filter((block) => !defaultBlockIds.has(block.id)),
+  ];
 }
 
 export function buildHostSlidesFromShowOrder(

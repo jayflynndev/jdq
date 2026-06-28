@@ -490,6 +490,42 @@ describe("buildHostSlideSequence", () => {
     );
   });
 
+  it("backfills Patreon break screens into older saved show orders", () => {
+    const deck = structuredClone(getDeck("patreon"));
+    deck.showOrder = getDefaultShowOrder(deck.quizType, deck.rounds.length).filter(
+      (block) =>
+        block.type !== "pre_break" &&
+        block.type !== "break_countdown" &&
+        block.type !== "post_break",
+    );
+
+    const resolved = resolveHostShowOrder(deck);
+    const slides = buildHostSlideSequence(deck);
+    const breakSlides = slides.filter(
+      (slide): slide is ShowScreenSlide =>
+        slide.type === "show-screen" &&
+        (slide.screenType === "pre_break" ||
+          slide.screenType === "break_countdown" ||
+          slide.screenType === "post_break"),
+    );
+
+    expect(
+      resolved
+        .filter(
+          (block) =>
+            block.type === "pre_break" ||
+            block.type === "break_countdown" ||
+            block.type === "post_break",
+        )
+        .map((block) => block.type),
+    ).toEqual(["pre_break", "break_countdown", "post_break"]);
+    expect(breakSlides.map((slide) => slide.screenType)).toEqual([
+      "pre_break",
+      "break_countdown",
+      "post_break",
+    ]);
+  });
+
   it("omits tiebreak slides when a weekly deck has no tiebreak", () => {
     const deck = structuredClone(getDeck("thursday"));
     delete deck.tiebreaker;
