@@ -51,10 +51,7 @@ import {
   isOpenQaFinding,
 } from "@/src/host-slides/qa";
 import {
-  HttpConnectionReviewer,
-  HttpFactReviewer,
   HttpImageSuggestionProvider,
-  HttpLanguageReviewer,
   PRODUCTION_REVIEW_STAGES,
   PRODUCTION_REVIEW_VERSION,
   runProductionReview,
@@ -490,6 +487,16 @@ function qaFindingLocation(finding: HostQaFinding): string {
   return "Deck";
 }
 
+function qaFindingSourceLabel(source: HostQaFinding["source"]): string {
+  if (source === "LOCAL") return "Local Review";
+  if (source === "AI_PRESENTER") return "Presenter Review";
+  if (source === "AI_IMAGE") return "Image Suggestions";
+  if (source === "AI_LANGUAGE") return "Legacy Language Review";
+  if (source === "AI_FACT") return "Legacy Fact Review";
+  if (source === "AI_CONNECTION") return "Legacy Connection Review";
+  return source;
+}
+
 export function DeckEditor({ deckId }: DeckEditorProps) {
   const [deck, setDeck] = useState<HostDeck | null>(null);
   const [loading, setLoading] = useState(true);
@@ -512,13 +519,10 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
   const [persistedImagePaths, setPersistedImagePaths] = useState<Set<string>>(
     () => new Set(),
   );
-  const languageReviewer = useMemo(() => new HttpLanguageReviewer(), []);
-  const factReviewer = useMemo(() => new HttpFactReviewer(), []);
   const imageSuggestionProvider = useMemo(
     () => new HttpImageSuggestionProvider(),
     [],
   );
-  const connectionReviewer = useMemo(() => new HttpConnectionReviewer(), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -778,10 +782,7 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
     setSavedMessage(null);
     try {
       const review = await runProductionReview(deck, new Date().toISOString(), {
-        languageReviewer,
-        factReviewer,
         imageSuggestionProvider,
-        connectionReviewer,
       });
       setDeck((current) => {
         if (!current || current.id !== deck.id) return current;
@@ -1164,7 +1165,7 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
   const qaGroups = (qaFindings ?? []).reduce<
     Record<string, HostQaFinding[]>
   >((groups, finding) => {
-    const key = `${finding.source} - ${finding.category}`;
+    const key = `${qaFindingSourceLabel(finding.source)} - ${finding.category}`;
     return {
       ...groups,
       [key]: [...(groups[key] ?? []), finding],
@@ -1962,7 +1963,8 @@ export function DeckEditor({ deckId }: DeckEditorProps) {
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
                             <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-200/70">
-                              {qaFindingLocation(finding)} - {finding.source} -{" "}
+                              {qaFindingLocation(finding)} -{" "}
+                              {qaFindingSourceLabel(finding.source)} -{" "}
                               {finding.status}
                             </p>
                             <h3 className="mt-1 font-bold text-white">

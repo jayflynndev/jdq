@@ -134,8 +134,8 @@ export async function POST(request: Request) {
       findings: [],
       message:
         error instanceof Error
-          ? `OpenAI Image Suggestions request failed: ${error.message}`
-          : "OpenAI Image Suggestions request failed.",
+        ? `Image Suggestions provider request failed: ${error.message}`
+        : "Image Suggestions provider request failed.",
     });
   }
 
@@ -143,7 +143,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       status: "unavailable",
       findings: [],
-      message: `OpenAI Image Suggestions timed out after ${response.timeoutMs}ms`,
+      message: `Image Suggestions provider timed out after ${response.timeoutMs}ms`,
     });
   }
 
@@ -153,7 +153,7 @@ export async function POST(request: Request) {
       findings: [],
       message: await openAiUnavailableMessage(
         response,
-        "OpenAI Image Suggestions",
+        "Image Suggestions provider",
       ),
     });
   }

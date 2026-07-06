@@ -1,7 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { POST as factReviewPost } from "@/app/api/host-slides/fact-review/route";
 import { POST as imageSuggestionsPost } from "@/app/api/host-slides/image-suggestions/route";
-import { POST as connectionReviewPost } from "@/app/api/host-slides/connection-review/route";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -24,7 +22,7 @@ const baseReviewRequest = {
 describe("Production Review route diagnostics", () => {
   it("uses a production-friendly default OpenAI timeout", async () => {
     vi.stubEnv("OPENAI_API_KEY", "test-key");
-    vi.stubEnv("OPENAI_FACT_REVIEW_MODEL", "gpt-test");
+    vi.stubEnv("OPENAI_IMAGE_SUGGESTION_MODEL", "gpt-test");
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => {
@@ -32,7 +30,7 @@ describe("Production Review route diagnostics", () => {
       }),
     );
 
-    const response = await factReviewPost(
+    const response = await imageSuggestionsPost(
       request({
         ...baseReviewRequest,
         items: [
@@ -40,10 +38,8 @@ describe("Production Review route diagnostics", () => {
             id: "q1",
             roundNumber: 1,
             questionNumber: 1,
-            question: "Question?",
-            answer: "Answer",
-            roundTitle: "Round",
-            pictureRequired: false,
+            question: "Who is this?",
+            answer: "Tom Hanks",
           },
         ],
       }),
@@ -51,34 +47,7 @@ describe("Production Review route diagnostics", () => {
 
     await expect(response.json()).resolves.toMatchObject({
       status: "unavailable",
-      message: "OpenAI Fact Review timed out after 25000ms",
-    });
-  });
-
-  it("reports missing Fact Review model", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "test-key");
-    vi.stubEnv("OPENAI_FACT_REVIEW_MODEL", "");
-
-    const response = await factReviewPost(
-      request({
-        ...baseReviewRequest,
-        items: [
-          {
-            id: "q1",
-            roundNumber: 1,
-            questionNumber: 1,
-            question: "Question?",
-            answer: "Answer",
-            roundTitle: "Round",
-            pictureRequired: false,
-          },
-        ],
-      }),
-    );
-
-    await expect(response.json()).resolves.toMatchObject({
-      status: "unavailable",
-      message: "Missing OPENAI_FACT_REVIEW_MODEL",
+      message: "Image Suggestions provider timed out after 25000ms",
     });
   });
 
@@ -107,36 +76,9 @@ describe("Production Review route diagnostics", () => {
     });
   });
 
-  it("reports missing Connection Review model", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "test-key");
-    vi.stubEnv("OPENAI_CONNECTION_REVIEW_MODEL", "");
-
-    const response = await connectionReviewPost(
-      request({
-        ...baseReviewRequest,
-        roundNumber: 4,
-        roundTitle: "Connections",
-        items: [
-          {
-            id: "q1",
-            roundNumber: 4,
-            questionNumber: 1,
-            question: "Question?",
-            answer: "Answer",
-          },
-        ],
-      }),
-    );
-
-    await expect(response.json()).resolves.toMatchObject({
-      status: "unavailable",
-      message: "Missing OPENAI_CONNECTION_REVIEW_MODEL",
-    });
-  });
-
   it("reports OpenAI 400 details without exposing secrets", async () => {
     vi.stubEnv("OPENAI_API_KEY", "test-key");
-    vi.stubEnv("OPENAI_FACT_REVIEW_MODEL", "gpt-test");
+    vi.stubEnv("OPENAI_IMAGE_SUGGESTION_MODEL", "gpt-test");
     vi.stubGlobal(
       "fetch",
       vi.fn(async () =>
@@ -153,7 +95,7 @@ describe("Production Review route diagnostics", () => {
       ),
     );
 
-    const response = await factReviewPost(
+    const response = await imageSuggestionsPost(
       request({
         ...baseReviewRequest,
         items: [
@@ -161,10 +103,8 @@ describe("Production Review route diagnostics", () => {
             id: "q1",
             roundNumber: 1,
             questionNumber: 1,
-            question: "Question?",
-            answer: "Answer",
-            roundTitle: "Round",
-            pictureRequired: false,
+            question: "Who is this?",
+            answer: "Tom Hanks",
           },
         ],
       }),
@@ -173,13 +113,13 @@ describe("Production Review route diagnostics", () => {
     await expect(response.json()).resolves.toMatchObject({
       status: "unavailable",
       message:
-        "OpenAI Fact Review returned 400: The model `gpt-test` does not exist. param: model code: model_not_found",
+        "Image Suggestions provider returned 400: The model `gpt-test` does not exist. param: model code: model_not_found",
     });
   });
 
   it("does not send temperature for models that only support the default", async () => {
     vi.stubEnv("OPENAI_API_KEY", "test-key");
-    vi.stubEnv("OPENAI_FACT_REVIEW_MODEL", "gpt-test");
+    vi.stubEnv("OPENAI_IMAGE_SUGGESTION_MODEL", "gpt-test");
     const fetchMock = vi.fn(
       async (...args: [RequestInfo | URL, RequestInit?]) => {
         void args;
@@ -190,7 +130,7 @@ describe("Production Review route diagnostics", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    await factReviewPost(
+    await imageSuggestionsPost(
       request({
         ...baseReviewRequest,
         items: [
@@ -198,10 +138,8 @@ describe("Production Review route diagnostics", () => {
             id: "q1",
             roundNumber: 1,
             questionNumber: 1,
-            question: "Question?",
-            answer: "Answer",
-            roundTitle: "Round",
-            pictureRequired: false,
+            question: "Who is this?",
+            answer: "Tom Hanks",
           },
         ],
       }),
@@ -218,7 +156,7 @@ describe("Production Review route diagnostics", () => {
 
   it("reports OpenAI timeouts before the platform kills the route", async () => {
     vi.stubEnv("OPENAI_API_KEY", "test-key");
-    vi.stubEnv("OPENAI_FACT_REVIEW_MODEL", "gpt-test");
+    vi.stubEnv("OPENAI_IMAGE_SUGGESTION_MODEL", "gpt-test");
     vi.stubEnv("OPENAI_REVIEW_TIMEOUT_MS", "1000");
     vi.stubGlobal(
       "fetch",
@@ -227,7 +165,7 @@ describe("Production Review route diagnostics", () => {
       }),
     );
 
-    const response = await factReviewPost(
+    const response = await imageSuggestionsPost(
       request({
         ...baseReviewRequest,
         items: [
@@ -235,10 +173,8 @@ describe("Production Review route diagnostics", () => {
             id: "q1",
             roundNumber: 1,
             questionNumber: 1,
-            question: "Question?",
-            answer: "Answer",
-            roundTitle: "Round",
-            pictureRequired: false,
+            question: "Who is this?",
+            answer: "Tom Hanks",
           },
         ],
       }),
@@ -246,7 +182,7 @@ describe("Production Review route diagnostics", () => {
 
     await expect(response.json()).resolves.toMatchObject({
       status: "unavailable",
-      message: "OpenAI Fact Review timed out after 1000ms",
+      message: "Image Suggestions provider timed out after 1000ms",
     });
   });
 });

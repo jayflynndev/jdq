@@ -78,18 +78,10 @@ export function getHostSlidesLimitsConfig(
       {
         id: "openai",
         title: "OpenAI",
-        usedFor: [
-          "AI Language Review",
-          "AI Fact Review",
-          "AI Image Search Term Suggestions",
-          "AI Connection Review",
-        ],
+        usedFor: ["Image search term suggestions"],
         items: [
           secretItem(env, "OPENAI_API_KEY"),
-          valueItem(env, "OPENAI_LANGUAGE_REVIEW_MODEL"),
-          valueItem(env, "OPENAI_FACT_REVIEW_MODEL"),
           valueItem(env, "OPENAI_IMAGE_SUGGESTION_MODEL"),
-          valueItem(env, "OPENAI_CONNECTION_REVIEW_MODEL"),
           {
             name: "OPENAI_REVIEW_TIMEOUT_MS",
             status: timeout ? "configured" : "missing",

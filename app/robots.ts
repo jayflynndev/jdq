@@ -1,17 +1,14 @@
-// app/robots.ts
 import type { MetadataRoute } from "next";
+import { siteConfig } from "@/config/siteConfig";
 
 export default function robots(): MetadataRoute.Robots {
-  const base =
-    process.env.NEXT_PUBLIC_SITE_URL || "https://your-domain.example";
-
   return {
     rules: [
       {
         userAgent: "*",
-        allow: "/", // allow all pages
+        allow: "/",
       },
     ],
-    sitemap: `${base}/sitemap.xml`,
+    sitemap: `${siteConfig.siteUrl}/sitemap.xml`,
   };
 }

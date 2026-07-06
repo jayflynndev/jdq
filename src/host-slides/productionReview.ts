@@ -7,41 +7,14 @@ import type {
   HostQaFinding,
   HostQaFindingCategory,
   HostQaFindingSeverity,
-  HostQaSuggestedFix,
 } from "@/src/host-slides/types";
 
 export const PRODUCTION_REVIEW_VERSION = "production-review-v1";
-
-export const LANGUAGE_REVIEW_SYSTEM_INSTRUCTIONS = [
-  "Review wording only.",
-  "Do NOT verify facts.",
-  "Do NOT search the web.",
-  "Do NOT invent facts.",
-  "Do NOT rewrite quiz style.",
-  "Prefer preserving Jay's tone.",
-  "If uncertain, return no finding.",
-].join(" ");
-
-export interface LanguageReviewer {
-  reviewLanguage(
-    request: LanguageReviewRequest,
-  ): Promise<LanguageReviewFinding[]>;
-}
-
-export interface FactReviewer {
-  reviewFacts(request: FactReviewRequest): Promise<ProviderReviewResult<FactReviewFinding>>;
-}
 
 export interface ImageSuggestionProvider {
   suggestImages(
     request: ImageSuggestionRequest,
   ): Promise<ProviderReviewResult<ImageSuggestionFinding>>;
-}
-
-export interface ConnectionReviewer {
-  reviewConnections(
-    request: ConnectionReviewRequest,
-  ): Promise<ProviderReviewResult<ConnectionReviewFinding>>;
 }
 
 export type ProductionReviewResult = {
@@ -51,77 +24,14 @@ export type ProductionReviewResult = {
   completedAt: string;
 };
 
-export type LanguageReviewField =
-  | "round_title"
-  | "question"
-  | "answer"
-  | "show_screen_text";
-
-export type LanguageReviewItem = {
-  id: string;
-  field: LanguageReviewField;
-  text: string;
-  location: string;
-  targetType: HostQaFinding["targetType"];
-  targetId: string;
-  roundNumber?: number;
-  questionNumber?: number;
-};
-
-export type LanguageReviewRequest = {
-  deckId: string;
-  quizTitle: string;
-  quizType: HostDeck["quizType"];
-  instructions: string;
-  items: LanguageReviewItem[];
-};
-
-export type LanguageReviewFinding = {
-  itemId: string;
-  severity: Extract<HostQaFindingSeverity, "info" | "warning">;
-  category: Extract<
-    HostQaFindingCategory,
-    "grammar" | "spelling" | "punctuation"
-  >;
-  message: string;
-  suggestedText?: string;
-};
-
 export type ProductionReviewOptions = {
-  languageReviewer?: LanguageReviewer;
-  factReviewer?: FactReviewer;
   imageSuggestionProvider?: ImageSuggestionProvider;
-  connectionReviewer?: ConnectionReviewer;
 };
 
 export type ProviderReviewResult<TFinding> = {
   status: "completed" | "unavailable";
   findings: TFinding[];
   message?: string;
-};
-
-export type FactReviewItem = {
-  id: string;
-  roundNumber: number;
-  questionNumber: number;
-  question: string;
-  answer: string;
-  roundTitle: string;
-  pictureRequired: boolean;
-};
-
-export type FactReviewRequest = {
-  deckId: string;
-  quizTitle: string;
-  quizType: HostDeck["quizType"];
-  items: FactReviewItem[];
-};
-
-export type FactReviewFinding = {
-  itemId: string;
-  severity: Extract<HostQaFindingSeverity, "info" | "warning" | "error">;
-  message: string;
-  confidence: number;
 };
 
 export type ImageSuggestionItem = {
@@ -147,30 +57,6 @@ export type ImageSuggestionFinding = {
   crop: string;
 };
 
-export type ConnectionReviewItem = {
-  id: string;
-  roundNumber: number;
-  questionNumber: number;
-  question: string;
-  answer: string;
-};
-
-export type ConnectionReviewRequest = {
-  deckId: string;
-  quizTitle: string;
-  quizType: HostDeck["quizType"];
-  roundNumber: number;
-  roundTitle: string;
-  items: ConnectionReviewItem[];
-};
-
-export type ConnectionReviewFinding = {
-  itemId: string;
-  severity: Extract<HostQaFindingSeverity, "info" | "warning" | "error">;
-  message: string;
-  confidence: number;
-};
-
 type PresenterFindingDraft = {
   targetType: HostQaFinding["targetType"];
   targetId?: string;
@@ -191,62 +77,14 @@ type StageRunOutput = {
   findings: HostQaFinding[];
 };
 
-class NoopLanguageReviewer implements LanguageReviewer {
-  async reviewLanguage(): Promise<LanguageReviewFinding[]> {
-    return [];
-  }
-}
-
-const DEFAULT_LANGUAGE_REVIEWER = new NoopLanguageReviewer();
-
-class UnavailableFactReviewer implements FactReviewer {
-  async reviewFacts(): Promise<ProviderReviewResult<FactReviewFinding>> {
-    return { status: "unavailable", findings: [], message: "Unavailable" };
-  }
-}
-
 class UnavailableImageSuggestionProvider implements ImageSuggestionProvider {
   async suggestImages(): Promise<ProviderReviewResult<ImageSuggestionFinding>> {
     return { status: "unavailable", findings: [], message: "Unavailable" };
   }
 }
 
-class UnavailableConnectionReviewer implements ConnectionReviewer {
-  async reviewConnections(): Promise<ProviderReviewResult<ConnectionReviewFinding>> {
-    return { status: "unavailable", findings: [], message: "Unavailable" };
-  }
-}
-
-const DEFAULT_FACT_REVIEWER = new UnavailableFactReviewer();
 const DEFAULT_IMAGE_SUGGESTION_PROVIDER =
   new UnavailableImageSuggestionProvider();
-const DEFAULT_CONNECTION_REVIEWER = new UnavailableConnectionReviewer();
-
-function isLanguageReviewFinding(value: unknown): value is LanguageReviewFinding {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return false;
-  }
-  const candidate = value as Record<string, unknown>;
-  return (
-    typeof candidate.itemId === "string" &&
-    (candidate.severity === "info" || candidate.severity === "warning") &&
-    (candidate.category === "grammar" ||
-      candidate.category === "spelling" ||
-      candidate.category === "punctuation") &&
-    typeof candidate.message === "string" &&
-    (candidate.suggestedText === undefined ||
-      typeof candidate.suggestedText === "string")
-  );
-}
-
-function parseLanguageReviewResponse(value: unknown): LanguageReviewFinding[] {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return [];
-  }
-  const findings = (value as Record<string, unknown>).findings;
-  if (!Array.isArray(findings)) return [];
-  return findings.filter(isLanguageReviewFinding);
-}
 
 function isProviderStatus(value: unknown): value is ProviderReviewResult<unknown>["status"] {
   return value === "completed" || value === "unavailable";
@@ -270,21 +108,6 @@ function parseProviderResult<TFinding>(
   };
 }
 
-function isFactReviewFinding(value: unknown): value is FactReviewFinding {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return false;
-  }
-  const candidate = value as Record<string, unknown>;
-  return (
-    typeof candidate.itemId === "string" &&
-    (candidate.severity === "info" ||
-      candidate.severity === "warning" ||
-      candidate.severity === "error") &&
-    typeof candidate.message === "string" &&
-    typeof candidate.confidence === "number"
-  );
-}
-
 function isImageSuggestionFinding(
   value: unknown,
 ): value is ImageSuggestionFinding {
@@ -302,87 +125,6 @@ function isImageSuggestionFinding(
       candidate.orientation === "square" ||
       candidate.orientation === "any")
   );
-}
-
-function isConnectionReviewFinding(
-  value: unknown,
-): value is ConnectionReviewFinding {
-  return isFactReviewFinding(value);
-}
-
-export class HttpLanguageReviewer implements LanguageReviewer {
-  constructor(private readonly endpoint = "/api/host-slides/language-review") {}
-
-  async reviewLanguage(
-    request: LanguageReviewRequest,
-  ): Promise<LanguageReviewFinding[]> {
-    const response = await fetch(this.endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
-    });
-    if (!response.ok) {
-      return [];
-    }
-    return parseLanguageReviewResponse(await response.json());
-  }
-}
-
-function chunkItems<TItem>(
-  items: readonly TItem[],
-  chunkSize: number,
-): TItem[][] {
-  const chunks: TItem[][] = [];
-  for (let index = 0; index < items.length; index += chunkSize) {
-    chunks.push(items.slice(index, index + chunkSize));
-  }
-  return chunks;
-}
-
-export class HttpFactReviewer implements FactReviewer {
-  constructor(
-    private readonly endpoint = "/api/host-slides/fact-review",
-    private readonly chunkSize = 10,
-  ) {}
-
-  async reviewFacts(
-    request: FactReviewRequest,
-  ): Promise<ProviderReviewResult<FactReviewFinding>> {
-    const chunks = chunkItems(request.items, Math.max(1, this.chunkSize));
-    const results: ProviderReviewResult<FactReviewFinding>[] = [];
-
-    for (const items of chunks) {
-      results.push(await this.reviewFactBatch({ ...request, items }));
-    }
-
-    const unavailableMessages = results.flatMap((result, index) =>
-      result.status === "unavailable"
-        ? [`Batch ${index + 1}: ${result.message ?? "Unavailable"}`]
-        : [],
-    );
-
-    return {
-      status: unavailableMessages.length > 0 ? "unavailable" : "completed",
-      findings: results.flatMap((result) => result.findings),
-      ...(unavailableMessages.length > 0
-        ? { message: unavailableMessages.join("; ") }
-        : {}),
-    };
-  }
-
-  private async reviewFactBatch(
-    request: FactReviewRequest,
-  ): Promise<ProviderReviewResult<FactReviewFinding>> {
-    const response = await fetch(this.endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
-    });
-    if (!response.ok) {
-      return { status: "unavailable", findings: [], message: "Unavailable" };
-    }
-    return parseProviderResult(await response.json(), isFactReviewFinding);
-  }
 }
 
 export class HttpImageSuggestionProvider implements ImageSuggestionProvider {
@@ -405,34 +147,11 @@ export class HttpImageSuggestionProvider implements ImageSuggestionProvider {
   }
 }
 
-export class HttpConnectionReviewer implements ConnectionReviewer {
-  constructor(
-    private readonly endpoint = "/api/host-slides/connection-review",
-  ) {}
-
-  async reviewConnections(
-    request: ConnectionReviewRequest,
-  ): Promise<ProviderReviewResult<ConnectionReviewFinding>> {
-    const response = await fetch(this.endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
-    });
-    if (!response.ok) {
-      return { status: "unavailable", findings: [], message: "Unavailable" };
-    }
-    return parseProviderResult(await response.json(), isConnectionReviewFinding);
-  }
-}
-
 export const PRODUCTION_REVIEW_STAGES: readonly StageDefinition[] = [
   { id: "structural_qa", label: "Structural QA" },
   { id: "local_proofing", label: "Local Proofing" },
   { id: "presenter_review", label: "Presenter Review" },
-  { id: "language_review", label: "AI Language Review" },
-  { id: "fact_review", label: "AI Fact Review" },
-  { id: "image_suggestions", label: "AI Image Suggestions" },
-  { id: "connection_review", label: "AI Connection Review" },
+  { id: "image_suggestions", label: "Image Suggestions" },
 ] as const;
 
 function stageLabel(stageId: HostProductionReviewStageId): string {
@@ -461,26 +180,6 @@ function presenterFindingId(deckId: string, draft: PresenterFindingDraft): strin
     draft.roundNumber ? `r${draft.roundNumber}` : null,
     draft.questionNumber ? `q${draft.questionNumber}` : null,
     slug(draft.message),
-  ]
-    .filter((part): part is string => Boolean(part))
-    .join("-");
-}
-
-function languageFindingId(
-  deckId: string,
-  item: LanguageReviewItem,
-  finding: LanguageReviewFinding,
-): string {
-  return [
-    "qa",
-    deckId,
-    "language",
-    finding.category,
-    item.targetType,
-    item.targetId,
-    item.roundNumber ? `r${item.roundNumber}` : null,
-    item.questionNumber ? `q${item.questionNumber}` : null,
-    slug(finding.message),
   ]
     .filter((part): part is string => Boolean(part))
     .join("-");
@@ -526,134 +225,6 @@ function hasPictureQuestion(round: HostDeck["rounds"][number]): boolean {
   );
 }
 
-function makeLanguageSuggestedFix(
-  item: LanguageReviewItem,
-  suggestedText: string | undefined,
-): HostQaSuggestedFix | undefined {
-  if (!suggestedText) return undefined;
-  if (
-    item.field !== "round_title" &&
-    item.field !== "question" &&
-    item.field !== "answer"
-  ) {
-    return undefined;
-  }
-  return {
-    type: "replace_text",
-    field: item.field,
-    value: suggestedText,
-    description: `Replace with: ${suggestedText}`,
-  };
-}
-
-function collectLanguageReviewItems(deck: HostDeck): LanguageReviewItem[] {
-  const items: LanguageReviewItem[] = [];
-  deck.rounds.forEach((round, roundIndex) => {
-    const roundNumber = roundIndex + 1;
-    items.push({
-      id: `round-${round.id}-title`,
-      field: "round_title",
-      text: round.title,
-      location: `Round ${roundNumber} title`,
-      targetType: "round",
-      targetId: round.id,
-      roundNumber,
-    });
-
-    round.questions.forEach((question, questionIndex) => {
-      const questionNumber = questionIndex + 1;
-      items.push(
-        {
-          id: `question-${question.id}-prompt`,
-          field: "question",
-          text: question.prompt,
-          location: `Round ${roundNumber} Question ${questionNumber}`,
-          targetType: "question",
-          targetId: question.id,
-          roundNumber,
-          questionNumber,
-        },
-        {
-          id: `question-${question.id}-answer`,
-          field: "answer",
-          text: question.answer,
-          location: `Round ${roundNumber} Question ${questionNumber} answer`,
-          targetType: "answer",
-          targetId: question.id,
-          roundNumber,
-          questionNumber,
-        },
-      );
-    });
-  });
-
-  if (deck.showScreens) {
-    Object.entries(deck.showScreens).forEach(([screenKey, screen]) => {
-      items.push(
-        {
-          id: `show-screen-${screenKey}-title`,
-          field: "show_screen_text",
-          text: screen.titleText,
-          location: `Show screen ${screenKey} title`,
-          targetType: "show_screen",
-          targetId: screenKey,
-        },
-        {
-          id: `show-screen-${screenKey}-body`,
-          field: "show_screen_text",
-          text: screen.bodyText,
-          location: `Show screen ${screenKey} body`,
-          targetType: "show_screen",
-          targetId: screenKey,
-        },
-        {
-          id: `show-screen-${screenKey}-ticker`,
-          field: "show_screen_text",
-          text: screen.tickerText,
-          location: `Show screen ${screenKey} ticker`,
-          targetType: "show_screen",
-          targetId: screenKey,
-        },
-      );
-    });
-  }
-
-  return items.filter((item) => item.text.trim().length > 0);
-}
-
-function makeLanguageReviewRequest(deck: HostDeck): LanguageReviewRequest {
-  return {
-    deckId: deck.id,
-    quizTitle: deck.title,
-    quizType: deck.quizType,
-    instructions: LANGUAGE_REVIEW_SYSTEM_INSTRUCTIONS,
-    items: collectLanguageReviewItems(deck),
-  };
-}
-
-function makeFactReviewRequest(deck: HostDeck): FactReviewRequest {
-  return {
-    deckId: deck.id,
-    quizTitle: deck.title,
-    quizType: deck.quizType,
-    items: deck.rounds.flatMap((round, roundIndex) =>
-      round.questions.map((question, questionIndex) => ({
-        id: question.id,
-        roundNumber: roundIndex + 1,
-        questionNumber: questionIndex + 1,
-        question: question.prompt,
-        answer: question.answer,
-        roundTitle: round.title,
-        pictureRequired: Boolean(
-          question.imagePlaceholder ||
-            question.imageStoragePath ||
-            question.imageUrl,
-        ),
-      })),
-    ),
-  };
-}
-
 function makeImageSuggestionRequest(deck: HostDeck): ImageSuggestionRequest {
   return {
     deckId: deck.id,
@@ -676,112 +247,6 @@ function makeImageSuggestionRequest(deck: HostDeck): ImageSuggestionRequest {
       }),
     ),
   };
-}
-
-function makeConnectionReviewRequest(
-  deck: HostDeck,
-): ConnectionReviewRequest | null {
-  const round = deck.rounds[3];
-  if (!round) return null;
-  return {
-    deckId: deck.id,
-    quizTitle: deck.title,
-    quizType: deck.quizType,
-    roundNumber: 4,
-    roundTitle: round.title,
-    items: round.questions.map((question, questionIndex) => ({
-      id: question.id,
-      roundNumber: 4,
-      questionNumber: questionIndex + 1,
-      question: question.prompt,
-      answer: question.answer,
-    })),
-  };
-}
-
-export async function runLanguageReview(
-  deck: HostDeck,
-  reviewer: LanguageReviewer = DEFAULT_LANGUAGE_REVIEWER,
-  existingFindings: readonly HostQaFinding[] = deck.qaFindings ?? [],
-  now = new Date().toISOString(),
-): Promise<HostQaFinding[]> {
-  const request = makeLanguageReviewRequest(deck);
-  const itemById = new Map(request.items.map((item) => [item.id, item]));
-  const existing = new Map(
-    existingFindings.map((finding) => [finding.id, finding]),
-  );
-  const providerFindings = await reviewer.reviewLanguage(request);
-
-  return providerFindings.flatMap((finding): HostQaFinding[] => {
-    const item = itemById.get(finding.itemId);
-    if (!item) return [];
-    const id = languageFindingId(deck.id, item, finding);
-    const previous = existing.get(id);
-    const suggestedFix = makeLanguageSuggestedFix(item, finding.suggestedText);
-    return [
-      {
-        id,
-        deckId: deck.id,
-        targetType: item.targetType,
-        targetId: item.targetId,
-        ...(item.roundNumber ? { roundNumber: item.roundNumber } : {}),
-        ...(item.questionNumber ? { questionNumber: item.questionNumber } : {}),
-        severity: finding.severity,
-        category: finding.category,
-        source: "AI_LANGUAGE",
-        message: `${item.location}: ${finding.message}`,
-        ...(suggestedFix ? { suggestedFix } : {}),
-        status: previous?.status ?? "open",
-        createdAt: previous?.createdAt ?? now,
-        updatedAt: previous?.updatedAt ?? now,
-      },
-    ];
-  });
-}
-
-export async function runFactReview(
-  deck: HostDeck,
-  reviewer: FactReviewer = DEFAULT_FACT_REVIEWER,
-  existingFindings: readonly HostQaFinding[] = deck.qaFindings ?? [],
-  now = new Date().toISOString(),
-): Promise<ProviderReviewResult<HostQaFinding>> {
-  const request = makeFactReviewRequest(deck);
-  const itemById = new Map(request.items.map((item) => [item.id, item]));
-  const existing = new Map(
-    existingFindings.map((finding) => [finding.id, finding]),
-  );
-  const result = await reviewer.reviewFacts(request);
-  const findings = result.findings.flatMap((finding): HostQaFinding[] => {
-    const item = itemById.get(finding.itemId);
-    if (!item) return [];
-    const id = aiFindingId(
-      deck.id,
-      "AI_FACT",
-      "fact_review",
-      item.id,
-      finding.message,
-    );
-    const previous = existing.get(id);
-    return [
-      {
-        id,
-        deckId: deck.id,
-        targetType: "answer",
-        targetId: item.id,
-        roundNumber: item.roundNumber,
-        questionNumber: item.questionNumber,
-        severity: finding.severity,
-        category: "fact_review",
-        source: "AI_FACT",
-        message: `Round ${item.roundNumber} Question ${item.questionNumber}: ${finding.message}`,
-        confidence: finding.confidence,
-        status: previous?.status ?? "open",
-        createdAt: previous?.createdAt ?? now,
-        updatedAt: previous?.updatedAt ?? now,
-      },
-    ];
-  });
-  return { ...result, findings };
 }
 
 export async function runImageSuggestionReview(
@@ -826,52 +291,6 @@ export async function runImageSuggestionReview(
           orientation: finding.orientation,
           crop: finding.crop,
         },
-        status: previous?.status ?? "open",
-        createdAt: previous?.createdAt ?? now,
-        updatedAt: previous?.updatedAt ?? now,
-      },
-    ];
-  });
-  return { ...result, findings };
-}
-
-export async function runConnectionReview(
-  deck: HostDeck,
-  reviewer: ConnectionReviewer = DEFAULT_CONNECTION_REVIEWER,
-  existingFindings: readonly HostQaFinding[] = deck.qaFindings ?? [],
-  now = new Date().toISOString(),
-): Promise<ProviderReviewResult<HostQaFinding>> {
-  const request = makeConnectionReviewRequest(deck);
-  if (!request) return { status: "completed", findings: [] };
-  const itemById = new Map(request.items.map((item) => [item.id, item]));
-  const existing = new Map(
-    existingFindings.map((finding) => [finding.id, finding]),
-  );
-  const result = await reviewer.reviewConnections(request);
-  const findings = result.findings.flatMap((finding): HostQaFinding[] => {
-    const item = itemById.get(finding.itemId);
-    if (!item) return [];
-    const id = aiFindingId(
-      deck.id,
-      "AI_CONNECTION",
-      "connection_round",
-      item.id,
-      finding.message,
-    );
-    const previous = existing.get(id);
-    return [
-      {
-        id,
-        deckId: deck.id,
-        targetType: "question",
-        targetId: item.id,
-        roundNumber: item.roundNumber,
-        questionNumber: item.questionNumber,
-        severity: finding.severity,
-        category: "connection_round",
-        source: "AI_CONNECTION",
-        message: `Round ${item.roundNumber} Question ${item.questionNumber}: ${finding.message}`,
-        confidence: finding.confidence,
         status: previous?.status ?? "open",
         createdAt: previous?.createdAt ?? now,
         updatedAt: previous?.updatedAt ?? now,
@@ -1053,25 +472,6 @@ export async function runProductionReviewStage(
     };
   }
 
-  if (stageId === "language_review") {
-    const findings = await runLanguageReview(
-      deck,
-      options.languageReviewer,
-      deck.qaFindings ?? [],
-      now,
-    );
-    return {
-      findings,
-      stage: stageResult(
-        stageId,
-        "completed",
-        findings.length,
-        Date.now() - startedAt,
-        now,
-      ),
-    };
-  }
-
   if (stageId === "presenter_review") {
     const findings = runPresenterReview(deck, deck.qaFindings ?? [], now);
     return {
@@ -1086,50 +486,10 @@ export async function runProductionReviewStage(
     };
   }
 
-  if (stageId === "fact_review") {
-    const result = await runFactReview(
-      deck,
-      options.factReviewer,
-      deck.qaFindings ?? [],
-      now,
-    );
-    return {
-      findings: result.findings,
-      stage: stageResult(
-        stageId,
-        result.status,
-        result.findings.length,
-        Date.now() - startedAt,
-        now,
-        result.message,
-      ),
-    };
-  }
-
   if (stageId === "image_suggestions") {
     const result = await runImageSuggestionReview(
       deck,
       options.imageSuggestionProvider,
-      deck.qaFindings ?? [],
-      now,
-    );
-    return {
-      findings: result.findings,
-      stage: stageResult(
-        stageId,
-        result.status,
-        result.findings.length,
-        Date.now() - startedAt,
-        now,
-        result.message,
-      ),
-    };
-  }
-
-  if (stageId === "connection_review") {
-    const result = await runConnectionReview(
-      deck,
-      options.connectionReviewer,
       deck.qaFindings ?? [],
       now,
     );

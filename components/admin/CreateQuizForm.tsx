@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/supabaseClient";
 import { FaPlus } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 

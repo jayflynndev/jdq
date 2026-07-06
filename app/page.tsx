@@ -1,20 +1,20 @@
-// app/page.tsx
 import type { Metadata } from "next";
-import { Hero } from "@/components/home/Hero";
-import { FeatureGrid } from "@/components/home/FeatureGrid";
-import { PromoStrip } from "@/components/home/PromoStrip";
-import { AdSlot } from "@/components/home/AdSlot";
-import Script from "next/script";
 import Link from "next/link";
+import Script from "next/script";
+import { siteConfig } from "@/config/siteConfig";
+import { AdSlot } from "@/components/home/AdSlot";
+import { FeatureGrid } from "@/components/home/FeatureGrid";
+import { Hero } from "@/components/home/Hero";
+import { PromoStrip } from "@/components/home/PromoStrip";
 
 export const metadata: Metadata = {
-  title: "Jay’s Quiz Hub — Live Quizzes, Recaps & Leaderboards",
+  title: "Jay's Quiz Hub - Live Quizzes, Recaps & Leaderboards",
   description:
-    "Play along with Jay’s live quizzes, add your scores, and climb JDQ & JVQ leaderboards. Catch quiz recaps and more.",
+    "Play along with Jay's live quizzes, add your scores, and climb JDQ & JVQ leaderboards. Catch quiz recaps and more.",
   openGraph: {
-    title: "Jay’s Quiz Hub",
+    title: "Jay's Quiz Hub",
     description:
-      "Live quizzes, recaps, and leaderboards — join in and climb the rankings.",
+      "Live quizzes, recaps, and leaderboards - join in and climb the rankings.",
     type: "website",
   },
 };
@@ -32,14 +32,13 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Website",
-    name: "Jay’s Quiz Hub",
-    url: "https://your-domain.example/",
+    name: "Jay's Quiz Hub",
+    url: siteConfig.siteUrl,
     description: "Live quizzes, recaps, and leaderboards for JDQ & JVQ.",
   };
 
   return (
     <>
-      {/* JSON-LD for SEO */}
       <Script
         id="home-jsonld"
         type="application/ld+json"
@@ -50,7 +49,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         {submitted ? (
           <div className="mx-auto max-w-7xl px-4 pt-4">
             <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800 shadow-sm">
-              Thanks — your question has been submitted for the anniversary
+              Thanks - your question has been submitted for the anniversary
               quiz!
             </div>
           </div>
@@ -58,7 +57,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
         <Hero />
 
-        {/* Top ad slot (leaderboard / responsive) */}
         <div className="mx-auto max-w-7xl px-4">
           <AdSlot
             id="home_top_responsive"
@@ -69,7 +67,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
         <FeatureGrid />
 
-        {/* Mid-page ad slot */}
         <div className="mx-auto max-w-7xl px-4">
           <AdSlot
             id="home_mid_responsive"
@@ -80,59 +77,44 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
         <PromoStrip />
 
-        {/* Bottom content block */}
         <section className="mx-auto max-w-7xl px-4 py-10">
-          <div className="rounded-lg bg-white/80 dark:bg-surface-inverted/50 backdrop-blur-md border border-purple-800 shadow-lg shadow-purple-50/20 p-6 transition-transform hover:scale-[1.01]">
+          <div className="rounded-lg border border-purple-800 bg-white/80 p-6 shadow-lg shadow-purple-50/20 backdrop-blur-md transition-transform hover:scale-[1.01] dark:bg-surface-inverted/50">
             <h2 className="font-heading text-2xl">How it works</h2>
-            <p className="text-textc-muted mt-2">
-              Jay&#39;s Quiz Hub is your new home of all things quizzing. Lets
-              Talk about how it works:
-              <br />
-              <br />
-              <strong>JDQ:</strong>
-              <br />
-              Jay&#39;s Daily Quiz, affectionately known as JDQ, is a daily quiz
-              that tests your knowledge on a variety of topics. 5 questions per
-              week day all wrapped up in a neat and tidy short podcast!
-              Available on all Podcast platforms, and a video version on
-              Jay&#39;s YouTube Channel. Find out more{" "}
-              <Link href="/jdq">here.</Link>
-              <br />
-              <strong>JVQ:</strong>
-              <br />
-              What is there to say that hasn&apos;t already been said about
-              Jay&#39;s Virtual Quiz (JVQ)? The original virtual pub quiz that
-              went viral in 2020 at the start of the pandemic and continues to
-              entertain thousands of quizzers twice a week on YouTube. A simple
-              50 question quiz split over five rounds, with the feel of a pub
-              quiz right in your living room! Check out the latest quiz{" "}
-              <Link href="/quiz-recap">here.</Link>
-              <br />
-              <strong>Leaderboards:</strong>
-              <br />
-              Alongside the both types of quizzes, there is now the option to
-              add your scores not only to Global Leader Boards, but now the
-              option to add fellow quizzers and create private leader boards,
-              and see how you stack up against your friends and family. You can
-              find the leaderboards <Link href="/leaderboards">here.</Link>
-              <br />
-              <strong>Coming Soon:</strong>
-              <br />
-              <strong>Quiz Hub Live:</strong> Will give you the chance to have
-              that true pub quiz feel from the comfort of your own home. Stay
-              tuned for more details!
-              <br />
-              <strong>Question Database:</strong> Jay will soon be uploading his
-              entire database and make it available for free! You will be able
-              to look through tens of thousands of questions written by Jay over
-              his 20 years of pub quizzing and take the stress out of creating
-              your own quizzes to use for yourself.
-              <br />
-              <strong>Pub Quiz Database:</strong> Jay is working hard on a
-              database that will list pub quizzes across the world. Soon you
-              will be able to find your nearest quiz, wherever you might find
-              yourslef in the world!
-            </p>
+            <div className="mt-2 space-y-4 text-textc-muted">
+              <p>
+                Jay&apos;s Quiz Hub is your home for daily quizzes, live quiz
+                recaps, public leaderboards, and private leaderboards with
+                friends and family.
+              </p>
+
+              <p>
+                <strong>JDQ:</strong> Jay&apos;s Daily Quiz is a short weekday
+                quiz with five questions across a variety of topics. Listen on
+                your podcast platform of choice, watch the video version on
+                YouTube, then add your score to the leaderboard. Find out more{" "}
+                <Link href="/jdq">here</Link>.
+              </p>
+
+              <p>
+                <strong>JVQ:</strong> Jay&apos;s Virtual Quiz is the original
+                virtual pub quiz that went viral in 2020 and still brings
+                quizzers together twice a week on YouTube. Catch the latest
+                recap <Link href="/quiz-recap">here</Link>.
+              </p>
+
+              <p>
+                <strong>Leaderboards:</strong> Add scores to the global boards,
+                create private leaderboards, and see how you stack up against
+                your friends and family. You can find the leaderboards{" "}
+                <Link href="/lb-select">here</Link>.
+              </p>
+
+              <p>
+                <strong>Coming soon:</strong> Quiz Hub Live, a question
+                database, and a pub quiz database are all planned as the site
+                grows.
+              </p>
+            </div>
           </div>
         </section>
       </main>

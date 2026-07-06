@@ -1,28 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  HttpFactReviewer,
-  HttpLanguageReviewer,
   PRODUCTION_REVIEW_STAGES,
   runPresenterReview,
-  runFactReview,
   runImageSuggestionReview,
-  runConnectionReview,
-  runLanguageReview,
   runProductionReview,
   runProductionReviewStage,
 } from "@/src/host-slides/productionReview";
 import { evaluateHostDeckReadiness } from "@/src/host-slides/readiness";
 import { mockHostSlideDecks } from "@/src/host-slides/mockDecks";
 import type { HostDeck } from "@/src/host-slides/types";
-import type {
-  LanguageReviewFinding,
-  LanguageReviewRequest,
-  LanguageReviewer,
-  FactReviewRequest,
-  FactReviewer,
-  ImageSuggestionProvider,
-  ConnectionReviewer,
-} from "@/src/host-slides/productionReview";
+import type { ImageSuggestionProvider } from "@/src/host-slides/productionReview";
 
 function deck(): HostDeck {
   return structuredClone(mockHostSlideDecks[0]);
@@ -76,10 +63,10 @@ describe("ProductionReviewEngine", () => {
     );
   });
 
-  it("returns unavailable when an AI provider is not configured", async () => {
+  it("returns unavailable when image suggestions are not configured", async () => {
     const result = await runProductionReviewStage(
       deck(),
-      "fact_review",
+      "image_suggestions",
       "2026-06-26T10:00:00Z",
     );
 
@@ -107,6 +94,22 @@ describe("ProductionReviewEngine", () => {
     );
   });
 
+  it("does not call removed OpenAI review routes", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const provider: ImageSuggestionProvider = {
+      async suggestImages() {
+        return { status: "completed", findings: [] };
+      },
+    };
+
+    await runProductionReview(deck(), "2026-06-26T10:00:00Z", {
+      imageSuggestionProvider: provider,
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("readiness warns when Production Review has not run", () => {
     const subject = deck();
     subject.qaFindings = [];
@@ -118,36 +121,7 @@ describe("ProductionReviewEngine", () => {
   });
 });
 
-describe("Producer AI stages", () => {
-  it("maps fact review findings with confidence", async () => {
-    const subject = deck();
-    const reviewer: FactReviewer = {
-      async reviewFacts(request) {
-        return {
-          status: "completed",
-          findings: [
-            {
-              itemId: request.items[0].id,
-              severity: "warning",
-              message: "Alternative accepted answer may be needed.",
-              confidence: 0.72,
-            },
-          ],
-        };
-      },
-    };
-
-    const result = await runFactReview(subject, reviewer);
-
-    expect(result.findings).toContainEqual(
-      expect.objectContaining({
-        source: "AI_FACT",
-        category: "fact_review",
-        confidence: 0.72,
-      }),
-    );
-  });
-
+describe("Image Suggestions", () => {
   it("generates image search suggestions for picture questions without images", async () => {
     const subject = deck();
     const provider: ImageSuggestionProvider = {
@@ -177,219 +151,5 @@ describe("Producer AI stages", () => {
         }),
       }),
     );
-  });
-
-  it("reviews Round 4 connections only", async () => {
-    const subject = deck();
-    const reviewer: ConnectionReviewer = {
-      async reviewConnections(request) {
-        expect(request.roundNumber).toBe(4);
-        return {
-          status: "completed",
-          findings: [
-            {
-              itemId: request.items[0].id,
-              severity: "warning",
-              message: "This answer may reveal the connection too early.",
-              confidence: 0.81,
-            },
-          ],
-        };
-      },
-    };
-
-    const result = await runConnectionReview(subject, reviewer);
-
-    expect(result.findings).toContainEqual(
-      expect.objectContaining({
-        source: "AI_CONNECTION",
-        category: "connection_round",
-        roundNumber: 4,
-        confidence: 0.81,
-      }),
-    );
-  });
-});
-
-describe("Language Review", () => {
-  function reviewer(
-    handler: (request: LanguageReviewRequest) => LanguageReviewFinding[],
-  ): LanguageReviewer {
-    return {
-      async reviewLanguage(request) {
-        return handler(request);
-      },
-    };
-  }
-
-  it("returns no findings when the provider returns none", async () => {
-    await expect(runLanguageReview(deck(), reviewer(() => []))).resolves.toEqual(
-      [],
-    );
-  });
-
-  it("returns wording findings from a mock provider", async () => {
-    const findings = await runLanguageReview(
-      deck(),
-      reviewer((request) => {
-        const item = request.items.find(
-          (candidate) => candidate.field === "question",
-        );
-        if (!item) throw new Error("Expected question item");
-        return [
-          {
-            itemId: item.id,
-            severity: "warning",
-            category: "grammar",
-            message: "Awkward wording may confuse players.",
-          },
-        ];
-      }),
-    );
-
-    expect(findings).toContainEqual(
-      expect.objectContaining({
-        source: "AI_LANGUAGE",
-        severity: "warning",
-        category: "grammar",
-        message: expect.stringContaining("Awkward wording"),
-      }),
-    );
-  });
-
-  it("returns ambiguity findings without changing the deck", async () => {
-    const subject = deck();
-    subject.rounds[0].questions[0].prompt = "Which country is Everest in?";
-
-    const findings = await runLanguageReview(
-      subject,
-      reviewer((request) => {
-        const item = request.items.find(
-          (candidate) => candidate.text === "Which country is Everest in?",
-        );
-        if (!item) throw new Error("Expected Everest question");
-        return [
-          {
-            itemId: item.id,
-            severity: "warning",
-            category: "grammar",
-            message: "Possible ambiguity.",
-            suggestedText:
-              "Mount Everest lies on the border of which two countries?",
-          },
-        ];
-      }),
-    );
-
-    expect(subject.rounds[0].questions[0].prompt).toBe(
-      "Which country is Everest in?",
-    );
-    expect(findings).toContainEqual(
-      expect.objectContaining({
-        message: expect.stringContaining("Possible ambiguity."),
-        suggestedFix: expect.objectContaining({
-          field: "question",
-          value: "Mount Everest lies on the border of which two countries?",
-        }),
-      }),
-    );
-  });
-
-  it("formats suggestions as safe replacement text", async () => {
-    const findings = await runLanguageReview(
-      deck(),
-      reviewer((request) => {
-        const item = request.items.find(
-          (candidate) => candidate.field === "round_title",
-        );
-        if (!item) throw new Error("Expected round title item");
-        return [
-          {
-            itemId: item.id,
-            severity: "info",
-            category: "grammar",
-            message: "Capitalisation is inconsistent.",
-            suggestedText: "General Knowledge",
-          },
-        ];
-      }),
-    );
-
-    expect(findings[0]?.suggestedFix).toEqual({
-      type: "replace_text",
-      field: "round_title",
-      value: "General Knowledge",
-      description: "Replace with: General Knowledge",
-    });
-  });
-
-  it("does not throw when the HTTP language provider is unavailable", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => new Response("Provider failed", { status: 502 })),
-    );
-
-    await expect(
-      new HttpLanguageReviewer("/test-language-review").reviewLanguage({
-        deckId: "deck-1",
-        quizTitle: "Test Quiz",
-        quizType: "thursday",
-        instructions: "Review wording only.",
-        items: [],
-      }),
-    ).resolves.toEqual([]);
-  });
-
-  it("splits HTTP fact review into smaller batches", async () => {
-    const fetchMock = vi.fn(
-      async (...args: [RequestInfo | URL, RequestInit?]) => {
-        const body = args[1]?.body;
-        if (typeof body !== "string") throw new Error("Expected JSON body");
-        const parsed = JSON.parse(body) as FactReviewRequest;
-        return Response.json({
-          status: "completed",
-          findings: parsed.items.map((item) => ({
-            itemId: item.id,
-            severity: "info",
-            message: `Checked ${item.id}`,
-            confidence: 0.9,
-          })),
-        });
-      },
-    );
-    vi.stubGlobal("fetch", fetchMock);
-
-    const items = Array.from({ length: 23 }, (_, index) => ({
-      id: `q${index + 1}`,
-      roundNumber: 1,
-      questionNumber: index + 1,
-      question: `Question ${index + 1}?`,
-      answer: `Answer ${index + 1}`,
-      roundTitle: "Round",
-      pictureRequired: false,
-    }));
-
-    const result = await new HttpFactReviewer("/test-fact-review", 10).reviewFacts({
-      deckId: "deck-1",
-      quizTitle: "Test Quiz",
-      quizType: "thursday",
-      items,
-    });
-
-    expect(fetchMock).toHaveBeenCalledTimes(3);
-    expect(result).toMatchObject({
-      status: "completed",
-      findings: expect.arrayContaining([
-        expect.objectContaining({ itemId: "q1" }),
-        expect.objectContaining({ itemId: "q23" }),
-      ]),
-    });
-
-    const batchSizes = fetchMock.mock.calls.map((call) => {
-      const body = call[1]?.body;
-      if (typeof body !== "string") throw new Error("Expected JSON body");
-      return (JSON.parse(body) as FactReviewRequest).items.length;
-    });
-    expect(batchSizes).toEqual([10, 10, 3]);
   });
 });

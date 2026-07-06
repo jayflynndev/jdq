@@ -14,9 +14,7 @@ export type HostReadinessIssueCode =
   | "dingbat_answer_missing"
   | "tiebreak_missing"
   | "production_review_not_run"
-  | "fact_review_not_completed"
   | "image_suggestions_not_generated"
-  | "connection_review_not_completed"
   | "qa_open_error"
   | "qa_open_warning";
 
@@ -47,20 +45,16 @@ const ERROR_PENALTIES: Readonly<Record<HostReadinessIssueCode, number>> = {
   dingbat_answer_missing: 5,
   tiebreak_missing: 8,
   production_review_not_run: 8,
-  fact_review_not_completed: 2,
   image_suggestions_not_generated: 2,
-  connection_review_not_completed: 2,
   qa_open_error: 12,
   qa_open_warning: 6,
 };
 
-function hasCompletedStage(
-  deck: HostDeck,
-  stageId: "fact_review" | "image_suggestions" | "connection_review",
-): boolean {
+function hasCompletedImageSuggestions(deck: HostDeck): boolean {
   return (
     deck.productionReview?.stages.some(
-      (stage) => stage.id === stageId && stage.status === "completed",
+      (stage) =>
+        stage.id === "image_suggestions" && stage.status === "completed",
     ) ?? false
   );
 }
@@ -205,22 +199,10 @@ export function evaluateHostDeckReadiness(
     });
   }
 
-  if (deck.productionReview && !hasCompletedStage(deck, "fact_review")) {
-    warnings.push({
-      code: "fact_review_not_completed",
-      message: "Fact Review has not completed.",
-    });
-  }
-  if (deck.productionReview && !hasCompletedStage(deck, "image_suggestions")) {
+  if (deck.productionReview && !hasCompletedImageSuggestions(deck)) {
     warnings.push({
       code: "image_suggestions_not_generated",
       message: "Image Suggestions have not been generated.",
-    });
-  }
-  if (deck.productionReview && !hasCompletedStage(deck, "connection_review")) {
-    warnings.push({
-      code: "connection_review_not_completed",
-      message: "Connection Review has not completed.",
     });
   }
 

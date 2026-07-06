@@ -10,24 +10,8 @@ const REVIEW_METADATA = {
   durationMs: 0,
   stages: [
     {
-      id: "fact_review" as const,
-      label: "AI Fact Review",
-      status: "completed" as const,
-      findingsCount: 0,
-      durationMs: 0,
-      completedAt: "2026-06-26T10:00:00Z",
-    },
-    {
       id: "image_suggestions" as const,
-      label: "AI Image Suggestions",
-      status: "completed" as const,
-      findingsCount: 0,
-      durationMs: 0,
-      completedAt: "2026-06-26T10:00:00Z",
-    },
-    {
-      id: "connection_review" as const,
-      label: "AI Connection Review",
+      label: "Image Suggestions",
       status: "completed" as const,
       findingsCount: 0,
       durationMs: 0,

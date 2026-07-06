@@ -6,16 +6,7 @@ import Link from "next/link";
 import toast from "react-hot-toast";
 import { supabase } from "@/supabaseClient";
 import { fetchPrivateLeaderboardStandings } from "@/utils/fetchPrivateLeaderboardStandings";
-
-/* ---------------- helpers ---------------- */
-function useDebounced<T>(value: T, delay = 400) {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(t);
-  }, [value, delay]);
-  return debounced;
-}
+import { useDebounced } from "@/hooks/useDebounced";
 
 type Standing = {
   user_id: string;
@@ -34,8 +25,8 @@ const rowTint = (idx: number) =>
     : idx === 2
     ? "bg-amber-50"
     : "";
-const medal = (idx: number) =>
-  idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : "";
+const topRankLabel = (idx: number) =>
+  idx === 0 ? "1st" : idx === 1 ? "2nd" : idx === 2 ? "3rd" : "";
 
 /* ---------------- page ---------------- */
 export default function LeaderboardDetailPage() {
@@ -87,7 +78,7 @@ export default function LeaderboardDetailPage() {
         (ctx.jdq_scope === "weekly" && "Weekly") ||
         (ctx.jdq_scope === "monthly" && "Monthly") ||
         "All-time";
-      setHeaderScope(`JDQ · ${pretty}`);
+      setHeaderScope(`JDQ - ${pretty}`);
     } else {
       const days = (
         ctx.jvq_days && ctx.jvq_days.length ? ctx.jvq_days : ["combined"]
@@ -103,7 +94,7 @@ export default function LeaderboardDetailPage() {
         )
         .join(" & ");
       const period = (ctx.jvq_scope === "monthly" && "Monthly") || "All-time";
-      setHeaderScope(`JVQ · ${days} · ${period}`);
+      setHeaderScope(`JVQ - ${days} - ${period}`);
     }
 
     setStandings(s);
@@ -145,7 +136,7 @@ export default function LeaderboardDetailPage() {
     }
   };
 
-  // search highlight (don’t filter; just highlight + summary)
+  // search highlight (highlights a row without filtering the leaderboard)
   const highlightIndex = useMemo(() => {
     if (!debouncedSearch.trim()) return null;
     const idx = standings.findIndex(
@@ -154,7 +145,7 @@ export default function LeaderboardDetailPage() {
     return idx >= 0 ? idx : null;
   }, [standings, debouncedSearch]);
 
-  if (loading) return <div className="p-6 text-sm text-gray-500">Loading…</div>;
+  if (loading) return <div className="p-6 text-sm text-gray-500">Loading...</div>;
 
   return (
     <main className="min-h-[100svh] bg-gradient-to-b from-purple-50 via-purple-100 to-purple-900">
@@ -165,7 +156,7 @@ export default function LeaderboardDetailPage() {
             href="/leaderboards/mine"
             className="rounded-md border borderc px-3 py-2 text-sm hover:bg-brand/10"
           >
-            ← My Leaderboards
+            {"<-"} My Leaderboards
           </Link>
         </div>
 
@@ -175,7 +166,7 @@ export default function LeaderboardDetailPage() {
             <div className="text-sm text-textc-muted">
               {headerScope}
               {startDate
-                ? ` · from ${new Date(startDate).toLocaleDateString()}`
+                ? ` - from ${new Date(startDate).toLocaleDateString()}`
                 : ""}
             </div>
           </div>
@@ -200,12 +191,9 @@ export default function LeaderboardDetailPage() {
               placeholder="Search username"
               value={searchedUsername}
               onChange={(e) => setSearchedUsername(e.target.value)}
-              className="w-full rounded-lg border borderc bg-white px-10 py-2 text-sm placeholder:text-textc-muted focus:outline-none focus:ring-4 focus:ring-brand/20"
+              className="w-full rounded-lg border borderc bg-white px-4 py-2 pr-16 text-sm placeholder:text-textc-muted focus:outline-none focus:ring-4 focus:ring-brand/20"
               aria-label="Search for a username"
             />
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
-              🔎
-            </span>
             <button
               type="button"
               onClick={() => setSearchedUsername("")}
@@ -222,14 +210,14 @@ export default function LeaderboardDetailPage() {
           <div className="mb-4 rounded bg-green-100 p-4 text-black shadow">
             <p className="font-bold mb-1">
               {highlightIndex < 10
-                ? "🎉 They’re in the top 10:"
-                : "Here’s their ranking:"}
+                ? "They are in the top 10:"
+                : "Here is their ranking:"}
             </p>
             <p>
-              <strong>#{highlightIndex + 1}</strong> —{" "}
-              {standings[highlightIndex].username} —{" "}
+              <strong>#{highlightIndex + 1}</strong> -{" "}
+              {standings[highlightIndex].username} -{" "}
               {standings[highlightIndex].avg.toFixed(2)} avg (Tiebreak avg:{" "}
-              {standings[highlightIndex].avg_tb.toFixed(1)}) —{" "}
+              {standings[highlightIndex].avg_tb.toFixed(1)}) -{" "}
               {standings[highlightIndex].entries} entries
             </p>
           </div>
@@ -277,7 +265,7 @@ export default function LeaderboardDetailPage() {
                           }`}
                         >
                           <td className="px-3 py-2 font-semibold">
-                            {medal(i)} #{i + 1}
+                            {topRankLabel(i)} #{i + 1}
                           </td>
                           <td className="px-3 py-2">{s.username}</td>
                           <td className="px-3 py-2 text-right">
@@ -313,7 +301,7 @@ export default function LeaderboardDetailPage() {
               </table>
               {!showFull && standings.length > 10 && (
                 <div className="px-3 py-2 text-xs text-textc-muted">
-                  Showing top 10 — click “Show Full Leaderboard” to see all.
+                  Showing top 10 - click &quot;Show Full Leaderboard&quot; to see all.
                 </div>
               )}
             </div>
@@ -323,3 +311,4 @@ export default function LeaderboardDetailPage() {
     </main>
   );
 }
+

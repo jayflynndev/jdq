@@ -18,7 +18,7 @@ describe("Host Slides limits config", () => {
 
   it("shows safe non-secret values", () => {
     const config = getHostSlidesLimitsConfig({
-      OPENAI_FACT_REVIEW_MODEL: "gpt-test",
+      OPENAI_IMAGE_SUGGESTION_MODEL: "gpt-test",
       OPENAI_REVIEW_TIMEOUT_MS: "45000",
       HOST_SLIDES_IMAGE_SEARCH_PROVIDER: "brave",
       NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
@@ -37,7 +37,7 @@ describe("Host Slides limits config", () => {
   it("marks missing and configured values without exposing keys", () => {
     const config = getHostSlidesLimitsConfig({
       OPENAI_API_KEY: "sk-secret",
-      OPENAI_LANGUAGE_REVIEW_MODEL: "",
+      OPENAI_IMAGE_SUGGESTION_MODEL: "",
     });
     const openAi = config.services.find((service) => service.id === "openai");
 
@@ -50,7 +50,7 @@ describe("Host Slides limits config", () => {
     );
     expect(openAi?.items).toContainEqual(
       expect.objectContaining({
-        name: "OPENAI_LANGUAGE_REVIEW_MODEL",
+        name: "OPENAI_IMAGE_SUGGESTION_MODEL",
         status: "missing",
         secret: false,
       }),
