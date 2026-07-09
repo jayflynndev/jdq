@@ -59,7 +59,7 @@ export function TextInput({
       <input
         className={clsx(
           "w-full h-10 rounded-lg border borderc bg-white dark:bg-surface-inverted/60",
-          "px-3 focus:outline-none focus:ring-4 focus:ring-brand/20",
+          "px-3 text-textc placeholder:text-textc-muted focus:outline-none focus:ring-4 focus:ring-brand/20",
           leftIcon && "pl-9",
           rightIcon && "pr-10",
           className
@@ -84,7 +84,7 @@ export function Select({
     <select
       className={clsx(
         "w-full h-10 rounded-lg border borderc bg-white dark:bg-surface-inverted/60 px-3",
-        "focus:outline-none focus:ring-4 focus:ring-brand/20",
+        "text-textc focus:outline-none focus:ring-4 focus:ring-brand/20",
         className
       )}
       {...props}
@@ -102,7 +102,7 @@ export function TextArea({
     <textarea
       className={clsx(
         "w-full min-h-[96px] rounded-lg border borderc bg-white dark:bg-surface-inverted/60 p-3",
-        "focus:outline-none focus:ring-4 focus:ring-brand/20",
+        "text-textc placeholder:text-textc-muted focus:outline-none focus:ring-4 focus:ring-brand/20",
         className
       )}
       {...props}

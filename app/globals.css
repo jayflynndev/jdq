@@ -56,6 +56,33 @@ body {
   -webkit-text-size-adjust: 100%;
 }
 
+/* Light surfaces should stay readable even inside dark/purple page shells. */
+:where(
+  .bg-white,
+  .bg-white\/60,
+  .bg-white\/70,
+  .bg-white\/80,
+  .bg-white\/85,
+  .bg-white\/90,
+  .bg-white\/95,
+  .bg-surface-subtle
+) {
+  color: rgb(15 23 42);
+}
+
+:where(
+  .bg-white,
+  .bg-white\/60,
+  .bg-white\/70,
+  .bg-white\/80,
+  .bg-white\/85,
+  .bg-white\/90,
+  .bg-white\/95,
+  .bg-surface-subtle
+) :where(input, select, textarea) {
+  color: rgb(15 23 42);
+}
+
 /* Headings use Poppins for a friendly, modern vibe */
 h1,
 h2,

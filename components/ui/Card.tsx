@@ -14,7 +14,8 @@ export function Card({
   variant?: CardVariant;
   hover?: boolean;
 }) {
-  const base = "rounded-lg border borderc shadow-lg p-4 sm:p-6 transition-all";
+  const base =
+    "rounded-lg border borderc text-textc shadow-lg p-4 sm:p-6 transition-all";
   const variants: Record<CardVariant, string> = {
     pop:
       // glassy white that works on purple gradient, with subtle brand tint

@@ -147,7 +147,7 @@ export default function AddScoreForm({ onScoreSubmitted }: AddScoreFormProps) {
   const maxScore = quizType === "JDQ" ? 5 : 50;
 
   return (
-    <div className="w-full max-w-md mx-auto bg-white dark:bg-surface-inverted/60 p-6 rounded-xl border borderc shadow-card">
+    <div className="w-full max-w-md mx-auto rounded-xl border borderc bg-white p-6 text-textc shadow-card dark:bg-surface-inverted/60">
       <h2 className="text-2xl font-bold mb-4 text-center">Add Your Score</h2>
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
@@ -160,7 +160,7 @@ export default function AddScoreForm({ onScoreSubmitted }: AddScoreFormProps) {
             value={quizDate}
             max={new Date().toISOString().split("T")[0]}
             onChange={(e) => setQuizDate(e.target.value)}
-            className="w-full px-3 py-2 border borderc rounded bg-white dark:bg-surface-inverted"
+            className="w-full rounded border borderc bg-white px-3 py-2 text-textc dark:bg-surface-inverted"
             required
           />
         </div>
@@ -173,7 +173,7 @@ export default function AddScoreForm({ onScoreSubmitted }: AddScoreFormProps) {
             id="quizType"
             value={quizType}
             onChange={(e) => setQuizType(e.target.value as "JDQ" | "JVQ")}
-            className="w-full px-3 py-2 border borderc rounded bg-white dark:bg-surface-inverted"
+            className="w-full rounded border borderc bg-white px-3 py-2 text-textc dark:bg-surface-inverted"
           >
             <option value="JDQ">JDQ (Daily Quiz)</option>
             <option value="JVQ">JVQ (Live YouTube Quiz)</option>
@@ -189,7 +189,7 @@ export default function AddScoreForm({ onScoreSubmitted }: AddScoreFormProps) {
             id="score"
             value={score}
             onChange={(e) => setScore(e.target.value)}
-            className="w-full px-3 py-2 border borderc rounded bg-white dark:bg-surface-inverted"
+            className="w-full rounded border borderc bg-white px-3 py-2 text-textc dark:bg-surface-inverted"
             min="0"
             max={maxScore}
             required
@@ -205,7 +205,7 @@ export default function AddScoreForm({ onScoreSubmitted }: AddScoreFormProps) {
             id="tiebreaker"
             value={tiebreaker}
             onChange={(e) => setTiebreaker(e.target.value)}
-            className="w-full px-3 py-2 border borderc rounded bg-white dark:bg-surface-inverted"
+            className="w-full rounded border borderc bg-white px-3 py-2 text-textc dark:bg-surface-inverted"
             min="0"
             max="1000"
             required

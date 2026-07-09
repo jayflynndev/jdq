@@ -42,7 +42,7 @@ export function Modal({
       <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px]" />
       <div
         className={clsx(
-          "relative w-full mx-auto bg-white dark:bg-surface-inverted rounded-lg shadow-card p-5 sm:p-6",
+          "relative w-full mx-auto bg-white text-textc dark:bg-surface-inverted rounded-lg shadow-card p-5 sm:p-6",
           "transition-all duration-200 ease-out-soft translate-y-0 sm:translate-y-[-6%]",
           sizes[size]
         )}
@@ -50,7 +50,7 @@ export function Modal({
       >
         {title && (
           <div className="mb-3">
-            <h3 id="modal-title" className="text-xl font-heading">
+            <h3 id="modal-title" className="text-xl font-heading text-textc">
               {title}
             </h3>
           </div>
