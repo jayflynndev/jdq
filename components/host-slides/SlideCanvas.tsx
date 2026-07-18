@@ -112,6 +112,17 @@ export function SlideCanvas({
     return "text-[clamp(2.5rem,5.2vw,6.25rem)]";
   }
 
+  function dingbatAnswerClass(text: string): string {
+    if (!isPresenter) {
+      return text.length > 24
+        ? "text-[clamp(0.85rem,1.7vw,1.35rem)]"
+        : "text-[clamp(1rem,2vw,1.6rem)]";
+    }
+    if (text.length > 32) return "text-[clamp(1.2rem,1.85vw,2.2rem)]";
+    if (text.length > 20) return "text-[clamp(1.35rem,2.2vw,2.65rem)]";
+    return "text-[clamp(1.6rem,2.7vw,3.2rem)]";
+  }
+
   const label = (text: string) => (
     <p
       className={`${labelClass} font-bold uppercase tracking-[0.2em] text-yellow-300`}
@@ -298,7 +309,11 @@ export function SlideCanvas({
                 )}
               </div>
               {showAnswers ? (
-                <p className="mt-[1%] min-h-[1.4em] text-center font-heading text-[clamp(0.7rem,1.25vw,1.35rem)] font-bold leading-tight text-slate-900">
+                <p
+                  className={`mt-[1%] flex min-h-[2.35em] shrink-0 items-center justify-center text-balance text-center font-heading font-extrabold leading-[1.05] text-slate-950 ${dingbatAnswerClass(
+                    item.answer || "Answer missing",
+                  )}`}
+                >
                   {item.answer || "Answer missing"}
                 </p>
               ) : null}
