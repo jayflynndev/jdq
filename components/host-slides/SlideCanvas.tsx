@@ -1,4 +1,7 @@
+"use client";
+
 import React from "react";
+import { useBreakTextFit } from "./useBreakTextFit";
 import Image from "next/image";
 import type {
   HostBreakBlockConfig,
@@ -60,9 +63,21 @@ export function SlideCanvas({
   mode = "preview",
 }: SlideCanvasProps) {
   const isPresenter = mode === "presenter";
+  const isBreakScreen =
+    slide.type === "show-screen" &&
+    ["pre_break", "break_countdown", "post_break", "saturday_break_2"].includes(
+      slide.screenType,
+    );
+  const breakFrameRef = useBreakTextFit(
+    isBreakScreen,
+    JSON.stringify([
+      slide, deck.showScreens, deck.quizRecapAccessCodes,
+      deck.title, deck.quizType, mode,
+    ]),
+  );
   const frameClass = isPresenter
     ? "h-screen min-h-screen w-screen"
-    : "aspect-video w-full rounded-xl border border-violet-300/30 shadow-2xl";
+    : `${isBreakScreen ? "aspect-[16/9]" : "aspect-video"} w-full rounded-xl border border-violet-300/30 shadow-2xl`;
   const labelClass = isPresenter
     ? "text-[clamp(1.8rem,2.6vw,3.2rem)]"
     : "text-xs sm:text-sm lg:text-base";
@@ -418,11 +433,11 @@ export function SlideCanvas({
       <div className="relative flex h-full flex-col overflow-hidden p-[3%]">
         <div className="flex min-h-0 flex-1 gap-[3%] pb-[6%]">
           <div
-            className="relative flex min-h-0 flex-1 flex-col justify-between overflow-hidden rounded-[2rem] border border-white/10 bg-black/70 p-[4%] shadow-2xl"
+            className={`relative flex min-h-0 ${isBreakScreen ? "min-w-0" : ""} flex-1 flex-col justify-between overflow-hidden rounded-[2rem] border border-white/10 bg-black/70 p-[4%] shadow-2xl`}
             data-show-screen-region="main"
           >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_22%,rgba(255,212,76,0.2),transparent_28%),radial-gradient(circle_at_78%_72%,rgba(124,58,237,0.34),transparent_36%),linear-gradient(135deg,rgba(0,0,0,0.15),rgba(0,0,0,0.84))]" />
-            <div className="relative h-full">
+            <div className="relative h-full" data-break-fit={isBreakScreen ? "main" : undefined}>
               {isBreakCountdownMode ? (
                 <div className="flex h-full flex-col justify-center">
                   <p className="text-[clamp(1rem,1.5vw,1.7rem)] font-black uppercase tracking-[0.2em] text-yellow-300">
@@ -441,6 +456,7 @@ export function SlideCanvas({
           <aside
             className="flex w-[34%] min-w-0 flex-col rounded-[2rem] border border-white/10 bg-white/95 p-[2.5%] text-slate-950 shadow-2xl"
             data-show-screen-region="right-panel"
+            data-break-fit={isBreakScreen ? "aside" : undefined}
           >
             <p className="text-[clamp(0.8rem,1.05vw,1.15rem)] font-black uppercase tracking-[0.2em] text-violet-700">
               {deck.quizType}
@@ -494,17 +510,17 @@ export function SlideCanvas({
                 <p className="text-[clamp(0.8rem,1vw,1.1rem)] font-black uppercase tracking-[0.18em] text-slate-500">
                   {timerLabel}
                 </p>
-                <div className="mt-[3%] flex h-[18vh] items-center justify-center rounded-2xl border-4 border-dashed border-slate-300 bg-slate-950 text-center text-[clamp(0.85rem,1.1vw,1.2rem)] font-bold uppercase tracking-[0.16em] text-slate-500"></div>
+                <div data-break-timer-box={isBreakScreen ? "" : undefined} className="mt-[3%] flex h-[18vh] items-center justify-center rounded-2xl border-4 border-dashed border-slate-300 bg-slate-950 text-center text-[clamp(0.85rem,1.1vw,1.2rem)] font-bold uppercase tracking-[0.16em] text-slate-500"></div>
               </div>
             ) : null}
           </aside>
         </div>
 
-        <div className="absolute inset-x-0 bottom-0 flex h-[10%] items-center overflow-hidden border-t border-yellow-300/40 bg-black/90 px-[3%]">
-          <div className="mr-[2%] rounded bg-yellow-300 px-[1.2%] py-[0.45%] text-[clamp(0.8rem,1.05vw,1.15rem)] font-black uppercase tracking-[0.16em] text-black">
+        <div data-break-fit={isBreakScreen ? "ticker" : undefined} className="absolute inset-x-0 bottom-0 flex h-[10%] items-center overflow-hidden border-t border-yellow-300/40 bg-black/90 px-[3%]">
+          <div data-break-ticker-label={isBreakScreen ? "" : undefined} className="mr-[2%] rounded bg-yellow-300 px-[1.2%] py-[0.45%] text-[clamp(0.8rem,1.05vw,1.15rem)] font-black uppercase tracking-[0.16em] text-black">
             {tickerLabel}
           </div>
-          <p className="truncate text-[clamp(1rem,1.55vw,1.8rem)] font-bold uppercase tracking-[0.12em] text-white">
+          <p className={`${isBreakScreen ? "min-w-0 flex-1" : "truncate"} text-[clamp(1rem,1.55vw,1.8rem)] font-bold uppercase tracking-[0.12em] text-white`}>
             {tickerText}
           </p>
         </div>
@@ -630,11 +646,12 @@ export function SlideCanvas({
 
   return (
     <div
+      ref={breakFrameRef}
       className={`relative overflow-hidden bg-[#16082d] text-left ${frameClass}`}
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_10%,rgba(255,212,76,0.22),transparent_28%),radial-gradient(circle_at_10%_90%,rgba(124,58,237,0.4),transparent_35%)]" />
       <div
-        className={`relative z-10 h-full ${
+        className={`${isBreakScreen && !isPresenter ? "absolute inset-0" : "relative"} z-10 h-full ${
           slide.type === "show-screen" ? "" : "p-[5%]"
         }`}
       >

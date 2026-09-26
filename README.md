@@ -34,3 +34,16 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Quiz Hub Live
+
+QHL is the server-authoritative live pub-quiz companion. The player shell lives at `/live`, the quizmaster shell at `/admin/qhl`, and the standalone Fastify/Socket.IO service is in `engine/`.
+
+For local Stage 1 development:
+
+1. Apply the Supabase migrations.
+2. Configure and run the engine as described in `engine/README.md`.
+3. Set `NEXT_PUBLIC_QHL_ENGINE_URL=http://localhost:4100` for this Next.js app.
+4. Sign in and open `/live` or, for an admin profile, `/admin/qhl`.
+
+The browser uses its Supabase session only to authenticate the engine socket. The Supabase service-role key belongs exclusively in the engine environment.
